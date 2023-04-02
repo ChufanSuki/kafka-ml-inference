@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
-import sys
-from random import choice
 from argparse import ArgumentParser, FileType
 from configparser import ConfigParser
+
+import h5py
+import numpy as np
 from confluent_kafka import Producer
-import cv2
-import os
 
 if __name__ == '__main__':
     # Parse the command line.
@@ -30,22 +29,24 @@ if __name__ == '__main__':
         if err:
             print('ERROR: Message failed delivery: {}'.format(err))
         else:
-            print("Produced event to topic {topic}: key = {key:12} value = {value:12}".format(
-                topic=msg.topic(), key=msg.key().decode('utf-8'), value=msg.value().decode('utf-8')))
+            print("Produced event to topic {topic}: key = {key:12}".format(
+                topic=msg.topic(), key=msg.key().decode('utf-8')))
 
     # Produce data by selecting random values from these lists.
-    topic = "my_image_topic"
+    topic = "cifar10_image_topic"
 
     count = 0
-    for filename in os.listdir('path/to/images'):
-        # Read image using OpenCV
-        image = cv2.imread(os.path.join('path/to/images', filename))
-        # Convert image to bytes
-        _, img_encoded = cv2.imencode('.jpg', image)
-        message = img_encoded.tobytes()
-        
-        producer.produce(topic, value=message, callback=delivery_callback)
+    
+    
+    f = h5py.File('CIFAR11_dataset.mat','r')
+    data = f.get('Xtrain')
+    data = np.array(data)
+    
+    while count < 10000:
+        message = data[count]
+        producer.produce(topic, key=str(count), value=message, callback=delivery_callback)
         count += 1
+        
 
     # Block until the messages are sent.
     producer.poll(10000)
