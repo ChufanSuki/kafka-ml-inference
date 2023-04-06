@@ -33,7 +33,7 @@ if __name__ == '__main__':
                 topic=msg.topic(), key=msg.key().decode('utf-8')))
 
     # Produce data by selecting random values from these lists.
-    topic = "cifar10_image_topic"
+    topic = "my_image_topic"
 
     count = 0
     
@@ -41,8 +41,9 @@ if __name__ == '__main__':
     f = h5py.File('CIFAR11_dataset.mat','r')
     data = f.get('Xtrain')
     data = np.array(data)
+    data = ["sin", "cos", "tan"]
     
-    while count < 10000:
+    while count < 3:
         message = data[count]
         producer.produce(topic, key=str(count), value=message, callback=delivery_callback)
         count += 1

@@ -30,7 +30,7 @@ if __name__ == '__main__':
             consumer.assign(partitions)
 
     # Subscribe to topic
-    topic = "cifar10_image_topic"
+    topic = "my_image_topic"
     consumer.subscribe([topic], on_assign=reset_offset)
 
     # Poll for new messages from Kafka and print them.
@@ -47,7 +47,8 @@ if __name__ == '__main__':
             else:
                 # Extract the (optional) key and value, and print.
                 frame_byted = msg.value()
-                
+                print("Consumed event from topic {topic}: key = {key:12}".format(
+                    topic=msg.topic(), key=msg.key().decode('utf-8')))
     except KeyboardInterrupt:
         pass
     finally:

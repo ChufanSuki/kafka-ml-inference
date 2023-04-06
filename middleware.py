@@ -1,13 +1,17 @@
 import requests
+import json
 
-url = 'http://example.com/api/users'
-data = {
-    'username': 'john.doe',
-    'email': 'john.doe@example.com',
-    'password': 'mysecretpassword'
-}
+url = "http://10.14.42.236:32492/imageClassification"
 
-response = requests.post(url, json=data)
+# define the headers and data for the request
+headers = {"Content-Type": "application/json"}
+data = {"data": "5.0,3.4,1.5,0.2"}
+
+# convert the data dictionary to a JSON string
+data_json = json.dumps(data)
+
+# send the post request
+response = requests.post(url, headers=headers, data=data_json)
 
 
 print(response.status_code) # Should print 200 if successful
