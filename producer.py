@@ -7,6 +7,14 @@ import h5py
 import numpy as np
 from confluent_kafka import Producer
 
+def write_to_kafka(producer, topic_name, items):
+    count=0
+    for message, key in items:
+        producer.produce(topic, key=str(count), value=message, callback=delivery_callback)
+        count+=1
+    producer.flush()
+    print("Wrote {0} messages into topic: {1}".format(count, topic_name))
+
 if __name__ == '__main__':
     # Parse the command line.
     parser = ArgumentParser()
@@ -34,21 +42,9 @@ if __name__ == '__main__':
 
     # Produce data by selecting random values from these lists.
     topic = "my_image_topic"
-
-    count = 0
-    
     
     f = h5py.File('CIFAR11_dataset.mat','r')
-    data = f.get('Xtrain')
-    data = np.array(data)
-    data = ["sin", "cos", "tan"]
+    x_train = np.array(f.get('Xtrain'))
+    x_test = np.array(f.get('Xtest'))
     
-    while count < 3:
-        message = data[count]
-        producer.produce(topic, key=str(count), value=message, callback=delivery_callback)
-        count += 1
-        
-
-    # Block until the messages are sent.
-    producer.poll(10000)
-    producer.flush()
+    write_to_kafka(producer, topic, zip(x_train, x_test))

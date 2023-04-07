@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import numpy as np
 from argparse import ArgumentParser, FileType
 from configparser import ConfigParser
 from confluent_kafka import Consumer, OFFSET_BEGINNING
@@ -47,8 +48,11 @@ if __name__ == '__main__':
             else:
                 # Extract the (optional) key and value, and print.
                 frame_byted = msg.value()
-                print("Consumed event from topic {topic}: key = {key:12}".format(
-                    topic=msg.topic(), key=msg.key().decode('utf-8')))
+                numpy_array = np.frombuffer(frame_byted)
+                print("Consumed event from topic {topic}: key = {key:12} value = {value}".format(
+                    topic=msg.topic(), key=msg.key().decode('utf-8'), value=numpy_array))
+                
+            
     except KeyboardInterrupt:
         pass
     finally:
