@@ -20,13 +20,12 @@ class ObjectDetectionResult(Result):
     def __init__(self, num) -> None:
         super().__init__()
         self.num = num
-        self.base64_str = []
+        self.base64_str = base64_str
         self.class_name = []
         self.score = []
         self.position = []
     
-    def add_to_result(self, base64_str, class_name, score, position: Position):
-        self.base64_str.append(base64_str)
+    def add_to_result(self, class_name, score, position: Position):
         self.class_name.append(class_name)
         self.score.append(score)
         self.position.append(position)

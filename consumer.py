@@ -31,10 +31,10 @@ def process_message(msg, url):
         icr = ImageClassificationResult(base64_str, result[0]["name"], result[0]["score"])
     else: # url == object_detection_url
         num = len(result)
-        icr = ObjectDetectionResult(num)
+        icr = ObjectDetectionResult(num, base64_str)
         for i in range(num):
             icr.add_to_result(
-                base64_str, result[i]['class_name'], result[i]['score'], 
+                result[i]['class_name'], result[i]['score'], 
                 Position(result[i]['position']['left'], result[i]['position']['top'], result[i]['position']['width'], result[i]['position']['height'])
                 )
     icr_list.append(icr)
@@ -96,10 +96,11 @@ if __name__ == '__main__':
             else:
                 process_message(msg, object_detection_url)
     except KeyboardInterrupt:
-        pass
+        print("exsiting now...")
     finally:
         # Leave group and commit final offsets
         consumer.close()
     # open a file, where you want to store the data
+    # write every N times
     with open(filename, 'wb') as file:
         pickle.dump(icr_list, file)
