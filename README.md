@@ -52,6 +52,10 @@ pip install flask
 python app.py
 ```
 
+```bash
+curl -H "Content-type: application/json" -X POST 127.0.0.1:8000/get_img -o result.json
+```
+
 ### API Endpoint for image classification
 
 The API endpoint is located at `http://localhost/get_classified_img`.
