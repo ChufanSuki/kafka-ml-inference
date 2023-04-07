@@ -12,7 +12,7 @@ from io import BytesIO
 from confluent_kafka import OFFSET_BEGINNING, Consumer
 
 from middleware import send_service, numpy_to_base64_image
-from result import ImageClassificationResult, ObjectDetectionResult, Location
+from result import ImageClassificationResult, ObjectDetectionResult, Position
 
 image_classification_url = "http://10.14.42.236:32492/imageClassification"
 object_detection_url = "http://10.14.42.236:30495/objectDetect"
@@ -34,8 +34,8 @@ def process_message(msg, url):
         icr = ObjectDetectionResult(num)
         for i in range(num):
             icr.add_to_result(
-                base64_str, result[num]['class_name'], result[num]['score'], 
-                Location(result[num]['location']['left'], result[num]['location']['top'], result[num]['location']['width'], result[num]['location']['height'])
+                base64_str, result[i]['class_name'], result[i]['score'], 
+                Position(result[i]['position']['left'], result[i]['position']['top'], result[i]['position']['width'], result[i]['position']['height'])
                 )
     icr_list.append(icr)
     print("Processed message with result:", result)
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('config_file', type=FileType('r'))
     parser.add_argument('--reset', action='store_true')
-    parser.add_argument('--topic', default='my_image_demo')
+    parser.add_argument('--topic', default='my_image_topic')
     parser.add_argument('--filename', default='results')
     args = parser.parse_args()
     
