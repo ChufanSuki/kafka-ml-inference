@@ -1,4 +1,4 @@
-# Integration Test
+# Integration Test with Model
 import h5py
 import numpy as np
 from middleware import send_service, numpy_to_base64_image

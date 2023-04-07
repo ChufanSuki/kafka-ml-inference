@@ -2,8 +2,20 @@ from flask import Flask, jsonify, request, send_file
 
 import requests
 import json
+import pickle
+from result import ImageClassificationResult
 
 app = Flask(__name__)
+
+filename = 'results'
+result_list = pickle.loads(filename)
+count = 0
+
+class ResultEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, ImageClassificationResult):
+            return {"success": True, "base64_str": obj.base64_str, "class_name": obj.class_name, "score": obj.score, "message": "Image Classification Result"}
+        return super().default(obj)
 
 # Define your routes here
 @app.route('/')
@@ -39,6 +51,13 @@ def get_image():
     filename = 'path/to/image/file.jpg'
     return send_file(filename, mimetype='image/jpeg')
 
+@app.route('/get_classified_img')
+def get_classified_img():
+    plane_id = request.args.get('planeid')
+    global count
+    count = count + 1
+    print(f"return the {count-1}-th result.")
+    return jsonify(result_list[count-1])
 
 # Start the server
 if __name__ == '__main__':

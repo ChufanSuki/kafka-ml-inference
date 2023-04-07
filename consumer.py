@@ -1,21 +1,28 @@
 #!/usr/bin/env python
 
 import sys
-import numpy as np
+import pickle
 from argparse import ArgumentParser, FileType
-from configparser import ConfigParser
-from confluent_kafka import Consumer, OFFSET_BEGINNING
-from middleware import send_service
 from concurrent.futures import ThreadPoolExecutor
+from configparser import ConfigParser
+
+import numpy as np
+from confluent_kafka import OFFSET_BEGINNING, Consumer
+
+from middleware import send_service
+from result import ImageClassificationResult, ObjectDetectionResult
 
 url = "http://10.14.42.236:32492/imageClassification"
+
+icr_list = []
 
 # Define the function to process a Kafka message
 def process_message(msg):
     frame_byted = msg.value()
     numpy_array = np.frombuffer(frame_byted)
-    result = numpy_array
-    # result = send_service(url, numpy_array).json()
+    result = send_service(url, numpy_array).json()
+    icr = ImageClassificationResult(numpy_array, result["name"], result["score"])
+    icr_list.append(icr)
     print("Processed message with result:", result)
 
 # Define the function to consume messages from Kafka
@@ -35,7 +42,12 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('config_file', type=FileType('r'))
     parser.add_argument('--reset', action='store_true')
+    parser.add_argument('--topic', default='my_image_topic')
+    parser.add_argument('--filename', default='results')
     args = parser.parse_args()
+    
+    filename = args.filename
+    topic = args.topic
 
     # Parse the configuration.
     # See https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
@@ -55,7 +67,6 @@ if __name__ == '__main__':
             consumer.assign(partitions)
 
     # Subscribe to topic
-    topic = "my_image_topic"
     consumer.subscribe([topic], on_assign=reset_offset)
 
     # Poll for new messages from Kafka and print them.
@@ -66,3 +77,6 @@ if __name__ == '__main__':
     finally:
         # Leave group and commit final offsets
         consumer.close()
+    # open a file, where you want to store the data
+    with open(filename, 'wb') as file:
+        pickle.dump(icr_list, file)
