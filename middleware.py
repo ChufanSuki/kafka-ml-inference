@@ -6,8 +6,7 @@ import io
 from PIL import Image
 from io import BytesIO
 
-url = "https://62a03266-fc4f-4a06-aab9-89e4e0ad3145.mock.pstmn.io/imageClassification"
-data = {"data": "5.0,3.4,1.5,0.2"}
+# See test_model.py for example usage
 
 def send_service(url, data):
     # define the headers and data for the request
@@ -40,5 +39,3 @@ def numpy_to_base64_image(arr):
     img_base64 = base64.b64encode(img_bytes.getvalue()).decode('utf-8')
     # Return the base64-encoded image string
     return img_base64
-
-# send_service("http://10.14.42.236:32032/imageClassification", )

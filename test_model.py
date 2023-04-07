@@ -9,4 +9,5 @@ data = np.array(data)
 image_array = data[-2]
 
 base64_str = numpy_to_base64_image(image_array)
-response = send_service("http://10.14.42.236:32032/imageClassification", base64_str)
+classification_response = send_service("http://10.14.42.236:32032/imageClassification", base64_str)
+detection_response = send_service("http://10.14.42.236:30495/objectDetect", base64_str)

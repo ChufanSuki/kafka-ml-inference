@@ -9,19 +9,24 @@ from configparser import ConfigParser
 import numpy as np
 from confluent_kafka import OFFSET_BEGINNING, Consumer
 
-from middleware import send_service
-from result import ImageClassificationResult, ObjectDetectionResult
+from middleware import send_service, numpy_to_base64_image
+from result import ImageClassificationResult, ObjectDetectionResult, Location
 
-url = "http://10.14.42.236:32492/imageClassification"
-
+image_classification_url = "http://10.14.42.236:32492/imageClassification"
+object_detection_url = "http://10.14.42.236:30495/objectDetect"
 icr_list = []
 
 # Define the function to process a Kafka message
-def process_message(msg):
+def process_message(msg, url):
     frame_byted = msg.value()
     numpy_array = np.frombuffer(frame_byted)
-    result = send_service(url, numpy_array).json()
-    icr = ImageClassificationResult(numpy_array, result["name"], result["score"])
+    base64_str = numpy_to_base64_image(numpy_array)
+    result = send_service(url, base64_str)
+    result = result["result"][0]
+    if url == image_classification_url:
+        icr = ImageClassificationResult(base64_str, result["name"], result["score"])
+    else: # url == object_detection_url
+        icr = ObjectDetectionResult(base64_str, result["name"], result["score"], Location(result["left"], result["top"], result["height"], result["weight"]))
     icr_list.append(icr)
     print("Processed message with result:", result)
 
@@ -71,7 +76,7 @@ if __name__ == '__main__':
 
     # Poll for new messages from Kafka and print them.
     try:
-        consume_messages()
+        consume_messages(object_detection_url)
     except KeyboardInterrupt:
         pass
     finally:
