@@ -66,8 +66,12 @@ def get_image():
     count = count + 1
     print(f"return the {count-1}-th result.")
     data_json = json.dumps(result_list[count-1],cls=ResultEncoder)
-    print(data_json)
-    return json.dumps(result_list[count-1],cls=ResultEncoder)
+    data = json.dumps(result_list[count-1], cls=ResultEncoder)
+    json_dict = json.loads(data)
+    json_dict_position = json.loads(json_dict["position"])
+    del json_dict['position']
+    json_dict['position'] = json_dict_position
+    return json.dumps(json_dict)
 
 @app.route('/get_classified_img')
 def get_classified_img():
@@ -76,8 +80,13 @@ def get_classified_img():
     print(count)
     count = count + 1
     print(f"return the {count-1}-th result.")
-    return jsonify(result_list[count-1])
+    data = json.dumps(result_list[count-1], cls=ResultEncoder)
+    json_dict = json.loads(data)
+    json_dict_position = json.loads(json_dict["position"])
+    del json_dict['position']
+    json_dict['position'] = json_dict_position
+    return json.dumps(json_dict)
 
 # Start the server
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=8000)
