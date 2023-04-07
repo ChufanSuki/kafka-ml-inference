@@ -6,6 +6,13 @@ from configparser import ConfigParser
 import h5py
 import numpy as np
 from confluent_kafka import Producer
+import os
+from PIL import Image
+import numpy as np
+from middleware import numpy_to_base64_image
+import base64
+from io import BytesIO
+
 
 def write_to_kafka(producer, topic_name, items):
     count=0
@@ -14,11 +21,49 @@ def write_to_kafka(producer, topic_name, items):
         count+=1
     producer.flush()
     print("Wrote {0} messages into topic: {1}".format(count, topic_name))
+    
+def produce_from_folder(producer, topic, directory_path='train', test=False):
+    # List all the files in the directory
+    image_files = [f for f in os.listdir(directory_path) if f.endswith(".jpg")]
+    key = []
+    img_arrs = []
+    num = 0
+    # Loop through each file and convert to base64
+    for file_name in image_files:
+        if test:
+            if num == 1:
+                break
+        file_path = os.path.join(directory_path, file_name)
+        img = Image.open(file_path)
+        # Convert the image to a NumPy array
+        img_arr = np.array(img)
+        b_string = base64.b64decode(numpy_to_base64_image(img_arr).encode('utf-8'))
+        img_arrs.append(b_string)
+        if test and num == 0:
+            img_bytes = img_arrs[0]
+
+            # read the bytes as an image using PIL (Python Imaging Library)
+            img = Image.open(BytesIO(img_bytes))
+
+            # save the image as a JPEG file
+            img.save("my_image.jpg")
+        key.append(num)
+        num = num + 1
+        
+    write_to_kafka(producer, topic, zip(img_arrs, key))
+    
+def produce_from_mat(producer, topic, filename='CIFAR11_dataset.mat'):
+    f = h5py.File(filename,'r')
+    x_train = np.array(f.get('Xtrain'))
+    x_test = np.array(f.get('Xtest'))
+    
+    write_to_kafka(producer, topic, zip(numpy_to_base64_image(x_train, rescale=255), numpy_to_base64_image(x_test, rescale=255)))
 
 if __name__ == '__main__':
     # Parse the command line.
     parser = ArgumentParser()
     parser.add_argument('config_file', type=FileType('r'))
+    parser.add_argument('--topic', default='my_image_topic')
     args = parser.parse_args()
 
     # Parse the configuration.
@@ -37,14 +82,12 @@ if __name__ == '__main__':
         if err:
             print('ERROR: Message failed delivery: {}'.format(err))
         else:
-            print("Produced event to topic {topic}: key = {key:12}".format(
-                topic=msg.topic(), key=msg.key().decode('utf-8')))
+            print("Produced event to topic {topic}: key = {key:12} message = {message}".format(
+                topic=msg.topic(), key=msg.key().decode('utf-8'), message=base64.b64encode(msg.value()).decode('utf-8')))
 
     # Produce data by selecting random values from these lists.
-    topic = "my_image_topic"
+    topic = args.topic
     
-    f = h5py.File('CIFAR11_dataset.mat','r')
-    x_train = np.array(f.get('Xtrain'))
-    x_test = np.array(f.get('Xtest'))
+    # produce_from_mat(producer, topic)
+    produce_from_folder(producer, topic, directory_path="/home/chufansuki/Downloads/train", test=True)
     
-    write_to_kafka(producer, topic, zip(x_train, x_test))
