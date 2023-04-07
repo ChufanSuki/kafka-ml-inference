@@ -25,10 +25,14 @@ def send_service(url, data):
         print("Failed to decode response body as JSON")
     return json_data
 
-def numpy_to_base64_image(arr):
+def numpy_to_base64_image(arr, resize=None):
     # Reshape the 1D array to a 3D array of shape (32, 32, 3)
     arr = np.uint8(arr * 255)
     img_arr = arr.reshape((3, 32, 32)).transpose([1, 2, 0]) 
+    if resize:
+        img = Image.fromarray(img_arr)
+        resized_img_pil = img.resize((resize))
+        img_arr = np.array(resized_img_pil)
     # Convert the NumPy array to a PIL Image object
     img = Image.fromarray(img_arr)
     # Create a BytesIO object to hold the image data
