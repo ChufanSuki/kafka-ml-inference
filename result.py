@@ -17,7 +17,7 @@ class ImageClassificationResult(Result):
         self.score = score
 
 class ObjectDetectionResult(Result):
-    def __init__(self, num) -> None:
+    def __init__(self, num, base64_str) -> None:
         super().__init__()
         self.num = num
         self.base64_str = base64_str
