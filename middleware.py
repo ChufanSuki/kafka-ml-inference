@@ -13,23 +13,18 @@ def send_service(url, data):
     # define the headers and data for the request
     headers = {"Content-Type": "application/json"}
 
-    # convert the data dictionary to a JSON string
-    data_json = json.dumps(data)
+    data = {"image": data}
 
     # send the post request
-    response = requests.post(url, headers=headers, data=data_json)
+    response = requests.post(url, headers=headers, json=data)
     
     print(response.status_code) # Should print 200 if successful
     try:
         json_data = json.loads(response.text)
-        print(json_data)
     except json.decoder.JSONDecodeError:
         # handle the case where the response body could not be decoded as JSON
         print("Failed to decode response body as JSON")
-
-    
-
-    return response
+    return json_data
 
 def numpy_to_base64_image(arr):
     # Reshape the 1D array to a 3D array of shape (32, 32, 3)
