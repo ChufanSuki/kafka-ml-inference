@@ -21,3 +21,6 @@ def send_service(url, data):
 
 response = send_service(url, data)
 
+
+print(response.status_code) # Should print 200 if successful
+print(response.json()) # Should print the response data from the server
