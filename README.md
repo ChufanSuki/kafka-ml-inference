@@ -11,6 +11,9 @@ docker compose exec broker \
     --replication-factor 1 \
     --partitions 1
 ```
+
+If you failed to create docker containers, and `docker conatiner logs id` shows that `Unable to create data directory /var/lib/zookeeper/log/version-2`. This may be caused by full disk (`docker system df`), run`docker builder prune` to clear build cache.
+
 ### Produce 
 
 ```bash

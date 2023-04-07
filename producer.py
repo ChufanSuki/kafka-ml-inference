@@ -64,6 +64,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('config_file', type=FileType('r'))
     parser.add_argument('--topic', default='my_image_topic')
+    parser.add_argument('--directory-path')
     args = parser.parse_args()
 
     # Parse the configuration.
@@ -87,7 +88,7 @@ if __name__ == '__main__':
 
     # Produce data by selecting random values from these lists.
     topic = args.topic
-    
+    directory_path = args.directory_path
     # produce_from_mat(producer, topic)
-    produce_from_folder(producer, topic, directory_path="/home/chufansuki/Downloads/train", test=True)
+    produce_from_folder(producer, topic, directory_path, test=True)
     

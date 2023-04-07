@@ -30,8 +30,13 @@ def process_message(msg, url):
     if url == image_classification_url:
         icr = ImageClassificationResult(base64_str, result[0]["name"], result[0]["score"])
     else: # url == object_detection_url
-        
-        icr = ObjectDetectionResult(base64_str, result["name"], result["score"], Location(result["left"], result["top"], result["height"], result["weight"]))
+        num = len(result)
+        icr = ObjectDetectionResult(num)
+        for i in range(num):
+            icr.add_to_result(
+                base64_str, result[num]['class_name'], result[num]['score'], 
+                Location(result[num]['location']['left'], result[num]['location']['top'], result[num]['location']['width'], result[num]['location']['height'])
+                )
     icr_list.append(icr)
     print("Processed message with result:", result)
 
