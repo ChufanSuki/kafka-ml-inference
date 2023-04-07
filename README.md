@@ -109,7 +109,7 @@ Example Error Response:
 
 ### API Endpoint for object detection
 
-The API endpoint is located at http://localhost/getimg.
+The API endpoint is located at http://localhost/get_img.
 Request Format
 
 The API accepts POST requests in JSON format with the following fields:
@@ -128,6 +128,7 @@ Response Format
 
 The API returns a JSON object with the following fields:
 - `success: Boolean value indicating if the request was successful.`
+- `class_name: A list of class names of the detected objects.`
 - `location: A list of coordinates representing the location of the object in the image.`
 - `message: A message describing the result of the request.`
 
@@ -136,7 +137,10 @@ Example Response:
 ```json
 {
     "success": true,
-    "location": [50, 100, 150, 200],
+    "base64_str": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABmklEQV",
+    "class_name": ["person", "person", "car", "car"],
+    "score": [1.0, 1.0, 1.0, 1.0],
+    "position": [{"left": 315.0, "top": 268.0, "height": 324.0, "width": 336.0}, {"left": 270.0, "top": 254.0, "height": 321.0, "width": 291.0}, {"left": 647.0, "top": 247.0, "height": 279.0, "width": 679.0}, {"left": 437.0, "top": 282.0, "height": 311.0, "width": 472.0}, {"left": 250.0, "top": 254.0, "height": 320.0, "width": 272.0}],
     "message": "Object successfully classified."
 }
 ```
