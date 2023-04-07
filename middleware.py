@@ -1,5 +1,10 @@
 import requests
 import json
+import numpy as np 
+import base64
+import io
+from PIL import Image
+from io import BytesIO
 
 url = "https://62a03266-fc4f-4a06-aab9-89e4e0ad3145.mock.pstmn.io/imageClassification"
 data = {"data": "5.0,3.4,1.5,0.2"}
