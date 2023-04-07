@@ -23,13 +23,14 @@ def process_message(msg, url):
     # base64_bytes = msg.value().decode('utf-8').encode('utf-8')
     # base64_str = base64.b64encode(base64_bytes).decode('utf-8')
     base64_str = base64.b64encode(msg.value()).decode('utf-8')
-    img = Image.open(BytesIO(msg.value()))
-    img.save("my_image_consumer.jpg")
+    # img = Image.open(BytesIO(msg.value()))
+    # img.save("my_image_consumer.jpg")
     result = send_service(url, base64_str)
     result = result["result"]
     if url == image_classification_url:
         icr = ImageClassificationResult(base64_str, result[0]["name"], result[0]["score"])
     else: # url == object_detection_url
+        
         icr = ObjectDetectionResult(base64_str, result["name"], result["score"], Location(result["left"], result["top"], result["height"], result["weight"]))
     icr_list.append(icr)
     print("Processed message with result:", result)
