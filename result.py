@@ -1,3 +1,5 @@
+from middleware import draw_rectangle_on_image
+
 class Result:
     def __init__(self) -> None:
         pass
@@ -29,3 +31,7 @@ class ObjectDetectionResult(Result):
         self.class_name.append(class_name)
         self.score.append(score)
         self.position.append(position)
+        
+    def draw_rectangle_on_image(self):
+        for i in range(self.num):
+            self.base64_str = draw_rectangle_on_image(self.base64_str, self.position[i])

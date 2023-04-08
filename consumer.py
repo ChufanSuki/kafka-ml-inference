@@ -37,6 +37,7 @@ def process_message(msg, url):
                 result[i]['class_name'], result[i]['score'], 
                 Position(result[i]['position']['left'], result[i]['position']['top'], result[i]['position']['width'], result[i]['position']['height'])
                 )
+        icr.draw_rectangle_on_image()
     icr_list.append(icr)
     print("Processed message with result:", result)
 
