@@ -128,6 +128,7 @@ Response Format
 
 The API returns a JSON object with the following fields:
 - `success: Boolean value indicating if the request was successful.`
+- `base64_str: Base64 string of the image with detected objects.`
 - `class_name: A list of class names of the detected objects.`
 - `location: A list of coordinates representing the location of the object in the image.`
 - `message: A message describing the result of the request.`
