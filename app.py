@@ -13,6 +13,20 @@ with open(filename, 'rb') as file:
     
 count = 0
 
+def write_json(result):
+    data = json.dumps(result, cls=ResultEncoder)
+
+    # load as dict
+    json_dict = json.loads(data)
+    json_dict_position = json.loads(json_dict["position"])
+    del json_dict['position']
+    json_dict['position'] = json_dict_position
+
+    # write pretty JSON to file
+    # with open('formatted.json','w') as formatted_file: 
+    #     json.dump(json_dict, formatted_file, indent=4)  
+    return json_dict
+
 class ResultEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, ImageClassificationResult):
@@ -80,11 +94,8 @@ def get_classified_img():
     print(count)
     count = count + 1
     print(f"return the {count-1}-th result.")
+    json_dict = write_json(result_list[count-1])
     data = json.dumps(result_list[count-1], cls=ResultEncoder)
-    json_dict = json.loads(data)
-    json_dict_position = json.loads(json_dict["position"])
-    del json_dict['position']
-    json_dict['position'] = json_dict_position
     return json.dumps(json_dict)
 
 # Start the server
