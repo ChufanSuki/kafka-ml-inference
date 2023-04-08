@@ -73,7 +73,7 @@ def gen_image():
     filename = 'path/to/image/file.jpg'
     return send_file(filename, mimetype='image/jpeg')
 
-@app.route('/get_img', methods=['POST'])
+@app.route('/get_img', methods=['POST', 'GET'])
 def get_image():
     # plane_id = request.args.get('planeid')
     global count
