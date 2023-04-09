@@ -32,10 +32,18 @@ def write_json(result):
 class ResultEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, ImageClassificationResult):
-            return {"success": True, "base64_str": obj.base64_str, "class_name": obj.class_name, "score": obj.score, "message": "Image Classification Result"}
+            return {
+                "success": True, 
+                "service": "Object Detection",
+                "base64_str": obj.base64_str, 
+                "class_name": obj.class_name, 
+                "score": obj.score, 
+                "message": "Image Classification Result"
+            }
         elif isinstance(obj, ObjectDetectionResult):
             return {
                 "success": True,
+                "service": "Object Detection",
                 "base64_str": obj.base64_str,
                 "class_name": obj.class_name,
                 "score": obj.score,

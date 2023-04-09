@@ -13,6 +13,7 @@ from confluent_kafka import OFFSET_BEGINNING, Consumer
 import random
 from middleware import send_service, numpy_to_base64_image, Service
 from result import ImageClassificationResult, ObjectDetectionResult, Position
+from typing import List
 
 
 image_classification_url = "http://10.14.42.236:32032/imageClassification"
@@ -39,11 +40,11 @@ def process_message(msg, service_pool: List[Service]):
     base64_str = base64.b64encode(msg.value()).decode('utf-8')
     # img = Image.open(BytesIO(msg.value()))
     # img.save("my_image_consumer.jpg")
-    service = service_pool[random.randint(0, len(service_pool-1))]
+    service = service_pool[random.randint(0, len(service_pool)-1)]
     result = send_service(service.url, base64_str)
     result = result["result"]
     if isinstance(service, ImageClassificationService):
-        icr = ImageClassificationResult(base64_str, result[0]["name"], result[0]["score"])
+        icr = ImageClassificationResult(base64_str, result[0]["classfication"], result[0]["score"])
     elif isinstance(service, ObjectDetectionService):
         num = len(result)
         icr = ObjectDetectionResult(num, base64_str)
@@ -54,10 +55,10 @@ def process_message(msg, service_pool: List[Service]):
                 )
         icr.draw_rectangle_on_image()
     icr_list.append(icr)
-    print("Processed message with result:", result)
+    print(f"Use {service.get_service_name()} Processed message with result:{result}")
 
 # Define the function to consume messages from Kafka
-def consume_messages(service):
+def consume_messages(service_pool):
     with ThreadPoolExecutor(max_workers=16) as executor:
         while True:
             msg = consumer.poll(1.0)
@@ -66,7 +67,7 @@ def consume_messages(service):
             elif msg.error():
                 print("ERROR: %s".format(msg.error()))
             else:
-                executor.submit(process_message, msg, service)
+                executor.submit(process_message, msg, service_pool)
 
 if __name__ == '__main__':
     # Parse the command line.
@@ -102,15 +103,15 @@ if __name__ == '__main__':
 
     # Poll for new messages from Kafka and print them.
     try:
-        consume_messages(object_detection_service)
-        # while True:
-        #     msg = consumer.poll(1.0)
-        #     if msg is None:
-        #         print("Waiting...")
-        #     elif msg.error():
-        #         print("ERROR: %s".format(msg.error()))
-        #     else:
-        #         process_message(msg, object_detection_service)
+        # consume_messages(service_pool)
+        while True:
+            msg = consumer.poll(1.0)
+            if msg is None:
+                print("Waiting...")
+            elif msg.error():
+                print("ERROR: %s".format(msg.error()))
+            else:
+                process_message(msg, service_pool)
     except KeyboardInterrupt:
         print(f"exsiting now... processed {len(icr_list)} messages.")
     finally:

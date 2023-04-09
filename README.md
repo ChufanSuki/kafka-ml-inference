@@ -88,6 +88,7 @@ Example Response:
 {
     "success": true,
     "class_name": "Cat",
+    "service": "Image Classification",
     "base64_str": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABmklEQV",
     "score": 0.99,
     "message": "Object successfully classified."
@@ -138,6 +139,7 @@ Example Response:
 ```json
 {
     "success": true,
+    "service": "Object Detection",
     "base64_str": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABmklEQV",
     "class_name": ["person", "person", "car", "car"],
     "score": [1.0, 1.0, 1.0, 1.0],

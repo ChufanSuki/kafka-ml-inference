@@ -14,6 +14,7 @@ class Service:
     
     def get_service_name(self):
         self.name = self.url.split("/")[-1]
+        return self.name
 
 def send_service(url, data):
     # define the headers and data for the request
