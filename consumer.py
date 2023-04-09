@@ -10,13 +10,14 @@ import numpy as np
 from PIL import Image
 from io import BytesIO
 from confluent_kafka import OFFSET_BEGINNING, Consumer
-
+import random
 from middleware import send_service, numpy_to_base64_image, Service
 from result import ImageClassificationResult, ObjectDetectionResult, Position
 
 
-image_classification_url = "http://10.14.42.236:32492/imageClassification"
+image_classification_url = "http://10.14.42.236:32032/imageClassification"
 object_detection_url = "http://10.14.42.236:32079/objectDetect"
+
 icr_list = []
 
 class ObjectDetectionService(Service):
@@ -29,14 +30,16 @@ class ImageClassificationService(Service):
 
 image_classification_service = ImageClassificationService(image_classification_url)
 object_detection_service = ObjectDetectionService(object_detection_url)
+service_pool = [image_classification_service, object_detection_service]
 
 # Define the function to process a Kafka message
-def process_message(msg, service: Service):
+def process_message(msg, service_pool: List[Service]):
     # base64_bytes = msg.value().decode('utf-8').encode('utf-8')
     # base64_str = base64.b64encode(base64_bytes).decode('utf-8')
     base64_str = base64.b64encode(msg.value()).decode('utf-8')
     # img = Image.open(BytesIO(msg.value()))
     # img.save("my_image_consumer.jpg")
+    service = service_pool[random.randint(0, len(service_pool-1))]
     result = send_service(service.url, base64_str)
     result = result["result"]
     if isinstance(service, ImageClassificationService):
@@ -109,7 +112,7 @@ if __name__ == '__main__':
         #     else:
         #         process_message(msg, object_detection_service)
     except KeyboardInterrupt:
-        print("exsiting now...")
+        print(f"exsiting now... processed {len(icr_list)} messages.")
     finally:
         # Leave group and commit final offsets
         consumer.close()
