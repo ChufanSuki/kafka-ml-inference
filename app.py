@@ -1,11 +1,13 @@
 from flask import Flask, jsonify, request, send_file
-
+from flask_cors import CORS
 import requests
 import json
 import pickle
 from result import ImageClassificationResult, ObjectDetectionResult, Position
+import random
 
 app = Flask(__name__)
+CORS(app)
 
 filename = 'results'
 with open(filename, 'rb') as file:
@@ -73,18 +75,16 @@ def gen_image():
     filename = 'path/to/image/file.jpg'
     return send_file(filename, mimetype='image/jpeg')
 
-@app.route('/get_img', methods=['POST', 'GET'])
+@app.route('/get_img', methods=['GET'])
 def get_image():
     # plane_id = request.args.get('planeid')
     global count
     count = count + 1
-    print(f"return the {count-1}-th result.")
-    data_json = json.dumps(result_list[count-1],cls=ResultEncoder)
-    data = json.dumps(result_list[count-1], cls=ResultEncoder)
-    json_dict = json.loads(data)
-    json_dict_position = json.loads(json_dict["position"])
-    del json_dict['position']
-    json_dict['position'] = json_dict_position
+    idx = count - 1
+    if count >= len(result_list):
+        idx = random.randint(0, len(result_list) - 1)
+    print(f"return the {idx}-th result.")
+    json_dict = write_json(result_list[idx])
     return json.dumps(json_dict)
 
 @app.route('/get_classified_img')
