@@ -8,6 +8,13 @@ from PIL import Image, ImageDraw
 
 # See test_model.py for example usage
 
+class Service:
+    def __init__(self, url) -> None:
+        self.url = url
+    
+    def get_service_name(self):
+        self.name = self.url.split("/")[-1]
+
 def send_service(url, data):
     # define the headers and data for the request
     headers = {"Content-Type": "application/json"}
@@ -43,7 +50,7 @@ def numpy_to_base64_image(arr, resize=None, rescale=None):
     img_bytes = io.BytesIO()
     # Save the image to the BytesIO object in PNG format
     img.save(img_bytes, format='PNG')
-    # Encode the image data in base64
+    # Encode the image datahttps://github.com/ChufanSuki/kafka-ml-inference.git in base64
     img_base64 = base64.b64encode(img_bytes.getvalue()).decode('utf-8')
     # Return the base64-encoded image string
     return img_base64

@@ -11,25 +11,39 @@ from PIL import Image
 from io import BytesIO
 from confluent_kafka import OFFSET_BEGINNING, Consumer
 
-from middleware import send_service, numpy_to_base64_image
+from middleware import send_service, numpy_to_base64_image, Service
 from result import ImageClassificationResult, ObjectDetectionResult, Position
 
+
 image_classification_url = "http://10.14.42.236:32492/imageClassification"
+
+class ObjectDetectionService(Service):
+    def __init__(self, url) -> None:
+        super().__init__(url)
+        
+
+class ImageClassificationService(Service):
+    def __init__(self, url) -> None:
+        super().__init__(url)
+
 object_detection_url = "http://10.14.42.236:30495/objectDetect"
 icr_list = []
 
+image_classification_service = ImageClassificationService(image_classification_url)
+object_detection_service = ObjectDetectionService(object_detection_url)
+
 # Define the function to process a Kafka message
-def process_message(msg, url):
+def process_message(msg, service: Service):
     # base64_bytes = msg.value().decode('utf-8').encode('utf-8')
     # base64_str = base64.b64encode(base64_bytes).decode('utf-8')
     base64_str = base64.b64encode(msg.value()).decode('utf-8')
     # img = Image.open(BytesIO(msg.value()))
     # img.save("my_image_consumer.jpg")
-    result = send_service(url, base64_str)
+    result = send_service(service.url, base64_str)
     result = result["result"]
-    if url == image_classification_url:
+    if isinstance(service, ImageClassificationService):
         icr = ImageClassificationResult(base64_str, result[0]["name"], result[0]["score"])
-    else: # url == object_detection_url
+    elif isinstance(service, ObjectDetectionService):
         num = len(result)
         icr = ObjectDetectionResult(num, base64_str)
         for i in range(num):
@@ -87,7 +101,7 @@ if __name__ == '__main__':
 
     # Poll for new messages from Kafka and print them.
     try:
-        # consume_messages(object_detection_url)
+        # consume_messages(object_detection_service)
         while True:
             msg = consumer.poll(1.0)
             if msg is None:
@@ -95,7 +109,7 @@ if __name__ == '__main__':
             elif msg.error():
                 print("ERROR: %s".format(msg.error()))
             else:
-                process_message(msg, object_detection_url)
+                process_message(msg, object_detection_service)
     except KeyboardInterrupt:
         print("exsiting now...")
     finally:
