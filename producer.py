@@ -26,7 +26,7 @@ class Producer:
             print('ERROR: Message failed delivery: {}'.format(err))
         else:
             print("Produced event to topic {topic}: key = {key:12} message = {message:12}".format(
-                topic=msg.topic(), key=msg.key().decode('utf-8'), message=base64.b64encode(msg.value()).decode('utf-8')))
+                topic=msg.topic(), key=msg.key().decode('utf-8'), message=base64.b64encode(msg.value()).decode('utf-8')[-12:]))
 
     def write_to_kafka(self, topic_name, items):
         count = 0

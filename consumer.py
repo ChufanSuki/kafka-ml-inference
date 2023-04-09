@@ -3,7 +3,7 @@
 import sys
 import pickle
 from argparse import ArgumentParser, FileType
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from configparser import ConfigParser
 import base64
 import numpy as np
@@ -16,18 +16,16 @@ from result import ImageClassificationResult, ObjectDetectionResult, Position
 
 
 image_classification_url = "http://10.14.42.236:32492/imageClassification"
+object_detection_url = "http://10.14.42.236:32079/objectDetect"
+icr_list = []
 
 class ObjectDetectionService(Service):
     def __init__(self, url) -> None:
         super().__init__(url)
         
-
 class ImageClassificationService(Service):
     def __init__(self, url) -> None:
         super().__init__(url)
-
-object_detection_url = "http://10.14.42.236:30495/objectDetect"
-icr_list = []
 
 image_classification_service = ImageClassificationService(image_classification_url)
 object_detection_service = ObjectDetectionService(object_detection_url)
@@ -56,8 +54,8 @@ def process_message(msg, service: Service):
     print("Processed message with result:", result)
 
 # Define the function to consume messages from Kafka
-def consume_messages(url):
-    with ThreadPoolExecutor(max_workers=10) as executor:
+def consume_messages(service):
+    with ThreadPoolExecutor(max_workers=16) as executor:
         while True:
             msg = consumer.poll(1.0)
             if msg is None:
@@ -65,7 +63,7 @@ def consume_messages(url):
             elif msg.error():
                 print("ERROR: %s".format(msg.error()))
             else:
-                executor.submit(process_message, msg, url)
+                executor.submit(process_message, msg, service)
 
 if __name__ == '__main__':
     # Parse the command line.
@@ -101,15 +99,15 @@ if __name__ == '__main__':
 
     # Poll for new messages from Kafka and print them.
     try:
-        # consume_messages(object_detection_service)
-        while True:
-            msg = consumer.poll(1.0)
-            if msg is None:
-                print("Waiting...")
-            elif msg.error():
-                print("ERROR: %s".format(msg.error()))
-            else:
-                process_message(msg, object_detection_service)
+        consume_messages(object_detection_service)
+        # while True:
+        #     msg = consumer.poll(1.0)
+        #     if msg is None:
+        #         print("Waiting...")
+        #     elif msg.error():
+        #         print("ERROR: %s".format(msg.error()))
+        #     else:
+        #         process_message(msg, object_detection_service)
     except KeyboardInterrupt:
         print("exsiting now...")
     finally:
