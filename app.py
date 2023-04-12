@@ -12,7 +12,7 @@ CORS(app)
 filename = 'results'
 with open(filename, 'rb') as file:
     result_list = pickle.load(file)
-    
+
 count = 0
 
 def write_json(result):
@@ -86,7 +86,7 @@ def gen_image():
 
 @app.route('/get_img', methods=['GET'])
 def get_image():
-    # plane_id = request.args.get('planeid')
+    plane_id = request.args.get('planeid')
     global count
     count = count + 1
     idx = count - 1

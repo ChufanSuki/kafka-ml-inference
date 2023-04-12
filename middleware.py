@@ -5,16 +5,22 @@ import base64
 import io
 from io import BytesIO
 from PIL import Image, ImageDraw
+import pickle
 
 # See test_model.py for example usage
 
 class Service:
     def __init__(self, url) -> None:
         self.url = url
+        self.result_list = []
     
     def get_service_name(self):
         self.name = self.url.split("/")[-1]
         return self.name
+    
+    def dump(self, filename):
+        with open(filename, 'wb') as file:
+            pickle.dump(self.result_list, file)
 
 class ServicePool:
     def __init__(self) -> None:

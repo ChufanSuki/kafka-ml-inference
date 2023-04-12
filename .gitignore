@@ -1,2 +1,8 @@
 *.mat
 *.pyc
+*.jpg
+dataset/
+test/
+onda
+results
+results_async

@@ -19,9 +19,6 @@ from typing import List
 image_classification_url = "http://10.14.42.236:32032/imageClassification"
 object_detection_url = "http://10.14.42.236:32079/objectDetect"
 
-icr_list = []
-odr_list = []
-
 class ObjectDetectionService(Service):
     def __init__(self, url) -> None:
         super().__init__(url)
@@ -32,21 +29,22 @@ class ImageClassificationService(Service):
 
 image_classification_service = ImageClassificationService(image_classification_url)
 object_detection_service = ObjectDetectionService(object_detection_url)
+image_classification_pool = ServicePool()
+object_detection_pool = ServicePool()
+image_classification_pool.add(image_classification_service)
+object_detection_pool.add(object_detection_service)
 service_pool = [image_classification_service, object_detection_service]
+service_pools = [image_classification_pool, object_detection_pool]
 
 # Define the function to process a Kafka message
 def process_message(msg, service_pool: List[Service]):
-    # base64_bytes = msg.value().decode('utf-8').encode('utf-8')
-    # base64_str = base64.b64encode(base64_bytes).decode('utf-8')
     base64_str = base64.b64encode(msg.value()).decode('utf-8')
-    # img = Image.open(BytesIO(msg.value()))
-    # img.save("my_image_consumer.jpg")
     service = service_pool[random.randint(0, len(service_pool)-1)]
     result = send_service(service.url, base64_str)
     result = result["result"]
     if isinstance(service, ImageClassificationService):
         icr = ImageClassificationResult(base64_str, result[0]["classfication"], result[0]["score"])
-        icr_list.append(icr)
+        service.result_list.append(icr)
     elif isinstance(service, ObjectDetectionService):
         num = len(result)
         odr = ObjectDetectionResult(num, base64_str)
@@ -56,7 +54,7 @@ def process_message(msg, service_pool: List[Service]):
                 Position(result[i]['position']['left'], result[i]['position']['top'], result[i]['position']['width'], result[i]['position']['height'])
                 )
         odr.draw_rectangle_on_image()
-        odr_list.append(odr)
+        service.result_list.append(odr)
     print(f"Use {service.get_service_name()} Processed message with result:{result}")
 
 # Define the function to consume messages from Kafka
@@ -121,8 +119,5 @@ if __name__ == '__main__':
         consumer.close()
     # open a file, where you want to store the data
     # write every N times
-    with open(f"{filename}-icr", 'wb') as file:
-        pickle.dump(icr_list, file)
-    
-    with open(f"{filename}-odr", 'wb') as file:
-        pickle.dump(odr_list, file)
+    image_classification_service.dump(filename+"-icr")
+    object_detection_service.dump(filename+"-odr")
