@@ -12,18 +12,23 @@ from io import BytesIO
 from confluent_kafka import OFFSET_BEGINNING, Consumer
 import random
 from middleware import send_service, numpy_to_base64_image, Service, ServicePool
-from result import ImageClassificationResult, ObjectDetectionResult, Position
+from result import ImageClassificationResult, ObjectDetectionResult, Position, ImageSegmentationResult
 from typing import List
 
 
 image_classification_url = "http://10.14.42.236:32032/imageClassification"
 object_detection_url = "http://10.14.42.236:32079/objectDetect"
+image_segmentation_url = "http://10.14.42.236:30260/imageSegmentation"
 
 class ObjectDetectionService(Service):
     def __init__(self, url) -> None:
         super().__init__(url)
         
 class ImageClassificationService(Service):
+    def __init__(self, url) -> None:
+        super().__init__(url)
+        
+class ImageSegmentationService(Service):
     def __init__(self, url) -> None:
         super().__init__(url)
 
@@ -55,6 +60,9 @@ def process_message(msg, service_pool: List[Service]):
                 )
         odr.draw_rectangle_on_image()
         service.result_list.append(odr)
+    elif isinstance(service, ImageSegmentationService):
+            isr = ImageSegmentationResult(result["segementation_list_path"][0])
+            service.result_list.append(isr)
     print(f"Use {service.get_service_name()} Processed message with result:{result}")
 
 # Define the function to consume messages from Kafka
@@ -113,7 +121,7 @@ if __name__ == '__main__':
             else:
                 process_message(msg, service_pool)
     except KeyboardInterrupt:
-        print(f"exsiting now... processed {len(icr_list)} messages.")
+        print(f"exsiting now...")
     finally:
         # Leave group and commit final offsets
         consumer.close()

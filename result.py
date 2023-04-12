@@ -35,3 +35,8 @@ class ObjectDetectionResult(Result):
     def draw_rectangle_on_image(self):
         for i in range(self.num):
             self.base64_str = draw_rectangle_on_image(self.base64_str, self.position[i])
+
+class ImageSegmentationResult(Result):
+    def __init__(self, segmentation_list_path) -> None:
+        super().__init__()
+        self.segmentation_list_path = segmentation_list_path
