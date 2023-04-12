@@ -16,7 +16,7 @@ from result import ImageClassificationResult, ObjectDetectionResult, Position, I
 from typing import List
 
 
-image_classification_url = "http://10.14.42.236:32032/imageClassification"
+image_classification_url = "http://10.14.42.236:31120/imageClassification"
 object_detection_url = "http://10.14.42.236:32079/objectDetect"
 image_segmentation_url = "http://10.14.42.236:30260/imageSegmentation"
 
@@ -34,6 +34,7 @@ class ImageSegmentationService(Service):
 
 image_classification_service = ImageClassificationService(image_classification_url)
 object_detection_service = ObjectDetectionService(object_detection_url)
+image_segmentation_service = ImageSegmentationService(image_segmentation_url)
 image_classification_pool = ServicePool()
 object_detection_pool = ServicePool()
 image_classification_pool.add(image_classification_service)
@@ -42,9 +43,8 @@ service_pool = [image_classification_service, object_detection_service]
 service_pools = [image_classification_pool, object_detection_pool]
 
 # Define the function to process a Kafka message
-def process_message(msg, service_pool: List[Service]):
+def process_message(msg, service):
     base64_str = base64.b64encode(msg.value()).decode('utf-8')
-    service = service_pool[random.randint(0, len(service_pool)-1)]
     result = send_service(service.url, base64_str)
     result = result["result"]
     if isinstance(service, ImageClassificationService):
@@ -58,10 +58,11 @@ def process_message(msg, service_pool: List[Service]):
                 result[i]['class_name'], result[i]['score'], 
                 Position(result[i]['position']['left'], result[i]['position']['top'], result[i]['position']['width'], result[i]['position']['height'])
                 )
-        odr.draw_rectangle_on_image()
+        if num != 0:
+            odr.draw_rectangle_on_image()
         service.result_list.append(odr)
     elif isinstance(service, ImageSegmentationService):
-            isr = ImageSegmentationResult(result["segementation_list_path"][0])
+            isr = ImageSegmentationResult(result["segmentation_list_path"][0])
             service.result_list.append(isr)
     print(f"Use {service.get_service_name()} Processed message with result:{result}")
 
@@ -82,7 +83,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('config_file', type=FileType('r'))
     parser.add_argument('--reset', action='store_true')
-    parser.add_argument('--topic', default='my_image_topic')
+    parser.add_argument('--topic', default='image_segmentation_topic')
     parser.add_argument('--filename', default='results')
     args = parser.parse_args()
     
@@ -109,6 +110,13 @@ if __name__ == '__main__':
     # Subscribe to topic
     consumer.subscribe([topic], on_assign=reset_offset)
 
+    if topic == "object_detection_topic":
+        service = object_detection_service
+    elif topic == "image_classification_topic":
+        service = image_classification_service
+    elif topic == "image_segmentation_topic":
+        service = image_segmentation_service
+    
     # Poll for new messages from Kafka and print them.
     try:
         # consume_messages(service_pool)
@@ -119,7 +127,7 @@ if __name__ == '__main__':
             elif msg.error():
                 print("ERROR: %s".format(msg.error()))
             else:
-                process_message(msg, service_pool)
+                process_message(msg, service)
     except KeyboardInterrupt:
         print(f"exsiting now...")
     finally:
@@ -127,5 +135,4 @@ if __name__ == '__main__':
         consumer.close()
     # open a file, where you want to store the data
     # write every N times
-    image_classification_service.dump(filename+"-icr")
-    object_detection_service.dump(filename+"-odr")
+    service.dump(filename+"-"+topic)

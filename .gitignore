@@ -1,8 +1,10 @@
 *.mat
 *.pyc
 *.jpg
-dataset/
+car_dataset/
+plane_dataset/
+val_dataset/
 test/
 onda
-results
-results_async
+results*
+*.json

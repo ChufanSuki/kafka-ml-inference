@@ -94,3 +94,15 @@ def draw_rectangle_on_image(base64_str, position_obj, color='red', width=2):
     img.save(buffered, format="JPEG")
     img_str = base64.b64encode(buffered.getvalue()).decode()
     return img_str
+
+
+def tif_to_jpg(input_folder, output_folder):
+
+    # Loop through all files in the input folder
+    for file_name in os.listdir(input_folder):
+        if file_name.endswith('.tif'):
+            # Open the TIF image file
+            tif_image = Image.open(os.path.join(input_folder, file_name))
+
+            # Construct the output file name
+            output_file_name = os.path.splitext(file_name)[0] + ".jpg"

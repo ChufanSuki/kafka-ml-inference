@@ -1,4 +1,6 @@
 from middleware import draw_rectangle_on_image
+import requests
+import base64
 
 class Result:
     def __init__(self) -> None:
@@ -39,4 +41,11 @@ class ObjectDetectionResult(Result):
 class ImageSegmentationResult(Result):
     def __init__(self, segmentation_list_path) -> None:
         super().__init__()
-        self.segmentation_list_path = segmentation_list_path
+        png_url = "http://10.14.42.236:30260/imageSegmentation/image/" + segmentation_list_path
+
+        # Send a GET request to the PNG URL and get the content
+        response = requests.get(png_url)
+        png_content = response.content
+
+        # Encode the PNG content as a base64 string
+        self.png_base64 = base64.b64encode(png_content).decode('utf-8')

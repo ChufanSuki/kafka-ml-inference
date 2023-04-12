@@ -14,7 +14,14 @@ def load(filename):
         result_list = pickle.load(file)
     return result_list
 
-count = 0
+classification_result_list = load("results_image_classification_topic")
+classification_count = 0
+
+detection_result_list = load("results_object_detection_topic")
+detection_count = 0
+
+segementation_result_list = load("results_image_segementation_topic")
+segementation_count = 0
 
 def write_json(result):
     data = json.dumps(result, cls=ResultEncoder)
@@ -41,6 +48,13 @@ class ResultEncoder(json.JSONEncoder):
                 "class_name": obj.class_name, 
                 "score": obj.score, 
                 "message": "Image Classification Result"
+            }
+        elif isinstance(obj, ImageSegmentationResult):
+            return {
+                "success": True, 
+                "service": "Image Segmentation",
+                "base64_str": obj.png_base64, 
+                "message": "Image Segmentation Result"
             }
         elif isinstance(obj, ObjectDetectionResult):
             return {
@@ -88,27 +102,39 @@ def gen_image():
 @app.route('/get_img', methods=['GET'])
 def get_image():
     plane_id = request.args.get('planeid')
-    if plane_id % 3 == 0:
-        result_list = load("results-icr")
-    global count
-    count = count + 1
-    idx = count - 1
-    if count >= len(result_list):
-        idx = random.randint(0, len(result_list) - 1)
+    global detection_count
+    detection_count = detection_count + 1
+    idx = detection_count - 1
+    if detection_count >= len(detection_result_list):
+        idx = random.randint(0, len(detection_result_list) - 1)
     print(f"return the {idx}-th result.")
-    json_dict = write_json(result_list[idx])
+    json_dict = write_json(detection_result_list[idx])
     return json.dumps(json_dict)
 
-@app.route('/get_classified_img')
-def get_classified_img():
+@app.route('/get_classified_img', methods=['GET'])
+def get_image():
     plane_id = request.args.get('planeid')
-    global count
-    count = count + 1
-    print(f"return the {count-1}-th result.")
-    json_dict = write_json(result_list[count-1])
-    data = json.dumps(result_list[count-1], cls=ResultEncoder)
+    global classification_count
+    classification_count = classification_count + 1
+    idx = classification_count - 1
+    if classification_count >= len(classification_result_list):
+        idx = random.randint(0, len(classification_result_list) - 1)
+    print(f"return the {idx}-th result.")
+    json_dict = write_json(classification_result_list[idx])
+    return json.dumps(json_dict)
+
+@app.route('/get_segment_img', methods=['GET'])
+def get_image():
+    plane_id = request.args.get('planeid')
+    global segementation_count
+    segementation_count = segementation_count + 1
+    idx = segementation_count - 1
+    if segementation_count >= len(segementation_result_list):
+        idx = random.randint(0, len(segementation_result_list) - 1)
+    print(f"return the {idx}-th result.")
+    json_dict = write_json(segementation_result_list[idx])
     return json.dumps(json_dict)
 
 # Start the server
 if __name__ == '__main__':
-    app.run(debug=True, port=8000)
+    app.run(debug=True, port=8080)
