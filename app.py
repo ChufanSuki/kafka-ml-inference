@@ -9,9 +9,10 @@ import random
 app = Flask(__name__)
 CORS(app)
 
-filename = 'results'
-with open(filename, 'rb') as file:
-    result_list = pickle.load(file)
+def load(filename):
+    with open(filename, 'rb') as file:
+        result_list = pickle.load(file)
+    return result_list
 
 count = 0
 
@@ -35,7 +36,7 @@ class ResultEncoder(json.JSONEncoder):
         if isinstance(obj, ImageClassificationResult):
             return {
                 "success": True, 
-                "service": "Object Detection",
+                "service": "Image Classification",
                 "base64_str": obj.base64_str, 
                 "class_name": obj.class_name, 
                 "score": obj.score, 
@@ -87,6 +88,8 @@ def gen_image():
 @app.route('/get_img', methods=['GET'])
 def get_image():
     plane_id = request.args.get('planeid')
+    if plane_id % 3 == 0:
+        result_list = load("results-icr")
     global count
     count = count + 1
     idx = count - 1
