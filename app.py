@@ -20,9 +20,10 @@ def write_json(result):
 
     # load as dict
     json_dict = json.loads(data)
-    json_dict_position = json.loads(json_dict["position"])
-    del json_dict['position']
-    json_dict['position'] = json_dict_position
+    if isinstance(result, ObjectDetectionResult):
+        json_dict_position = json.loads(json_dict["position"])
+        del json_dict['position']
+        json_dict['position'] = json_dict_position
 
     # write pretty JSON to file
     # with open('formatted.json','w') as formatted_file: 
@@ -99,7 +100,6 @@ def get_image():
 def get_classified_img():
     plane_id = request.args.get('planeid')
     global count
-    print(count)
     count = count + 1
     print(f"return the {count-1}-th result.")
     json_dict = write_json(result_list[count-1])

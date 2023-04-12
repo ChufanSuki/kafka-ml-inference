@@ -16,6 +16,14 @@ class Service:
         self.name = self.url.split("/")[-1]
         return self.name
 
+class ServicePool:
+    def __init__(self) -> None:
+        self.pool = []
+        self.idx = 0
+    
+    def add(self, service):
+        self.pool.append(service)
+
 def send_service(url, data):
     # define the headers and data for the request
     headers = {"Content-Type": "application/json"}

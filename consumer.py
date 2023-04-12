@@ -11,7 +11,7 @@ from PIL import Image
 from io import BytesIO
 from confluent_kafka import OFFSET_BEGINNING, Consumer
 import random
-from middleware import send_service, numpy_to_base64_image, Service
+from middleware import send_service, numpy_to_base64_image, Service, ServicePool
 from result import ImageClassificationResult, ObjectDetectionResult, Position
 from typing import List
 
@@ -20,6 +20,7 @@ image_classification_url = "http://10.14.42.236:32032/imageClassification"
 object_detection_url = "http://10.14.42.236:32079/objectDetect"
 
 icr_list = []
+odr_list = []
 
 class ObjectDetectionService(Service):
     def __init__(self, url) -> None:
@@ -45,16 +46,17 @@ def process_message(msg, service_pool: List[Service]):
     result = result["result"]
     if isinstance(service, ImageClassificationService):
         icr = ImageClassificationResult(base64_str, result[0]["classfication"], result[0]["score"])
+        icr_list.append(icr)
     elif isinstance(service, ObjectDetectionService):
         num = len(result)
-        icr = ObjectDetectionResult(num, base64_str)
+        odr = ObjectDetectionResult(num, base64_str)
         for i in range(num):
-            icr.add_to_result(
+            odr.add_to_result(
                 result[i]['class_name'], result[i]['score'], 
                 Position(result[i]['position']['left'], result[i]['position']['top'], result[i]['position']['width'], result[i]['position']['height'])
                 )
-        icr.draw_rectangle_on_image()
-    icr_list.append(icr)
+        odr.draw_rectangle_on_image()
+        odr_list.append(odr)
     print(f"Use {service.get_service_name()} Processed message with result:{result}")
 
 # Define the function to consume messages from Kafka
@@ -119,5 +121,8 @@ if __name__ == '__main__':
         consumer.close()
     # open a file, where you want to store the data
     # write every N times
-    with open(filename, 'wb') as file:
+    with open(f"{filename}-icr", 'wb') as file:
         pickle.dump(icr_list, file)
+    
+    with open(f"{filename}-odr", 'wb') as file:
+        pickle.dump(odr_list, file)

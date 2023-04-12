@@ -78,6 +78,7 @@ Response Format
 The API returns a JSON object with the following fields:
 - `success: Boolean value indicating if the request was successful.`
 - `class_name: Class name of the classified image.`
+- `service: Name of the service.`
 - `base64_str: Base64 string of the classified image.`
 - `score: The score of the classification.`
 - `message: A message describing the result of the request.`
@@ -129,6 +130,7 @@ Response Format
 
 The API returns a JSON object with the following fields:
 - `success: Boolean value indicating if the request was successful.`
+- `service: Name of the service.`
 - `base64_str: Base64 string of the image with detected objects.`
 - `class_name: A list of class names of the detected objects.`
 - `location: A list of coordinates representing the location of the object in the image.`
