@@ -36,11 +36,11 @@ def send_service(url, data):
     print(response.status_code) # Should print 200 if successful
     try:
         json_data = json.loads(response.text)
+        return json_data
     except json.decoder.JSONDecodeError:
         # handle the case where the response body could not be decoded as JSON
         print("Failed to decode response body as JSON")
-    return json_data
-
+    
 def numpy_to_base64_image(arr, resize=None, rescale=None):
     if rescale:
         arr = np.uint8(arr * rescale)

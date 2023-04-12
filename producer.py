@@ -43,34 +43,23 @@ class Producer:
     
         self.write_to_kafka(topic, zip(numpy_to_base64_image(x_train, rescale=255), numpy_to_base64_image(x_test, rescale=255)))
 
-    def produce_from_folder(self, topic, directory_path='train', test=False):
-        # List all the files in the directory
-        image_files = [f for f in os.listdir(directory_path) if f.endswith(".jpg")]
+    def produce_from_folder(self, topic, directory_path='train'):
         key = []
         img_arrs = []
         num = 0
-        # Loop through each file and convert to base64
-        for file_name in image_files:
-            if test:
-                if num == 100:
-                    break
-            file_path = os.path.join(directory_path, file_name)
-            img = Image.open(file_path)
-            # Convert the image to a NumPy array
-            img_arr = np.array(img)
-            b_string = base64.b64decode(numpy_to_base64_image(img_arr).encode('utf-8'))
-            img_arrs.append(b_string)
-            if test and num == 0:
-                img_bytes = img_arrs[0]
-
-                # read the bytes as an image using PIL (Python Imaging Library)
-                img = Image.open(BytesIO(img_bytes))
-
-                # save the image as a JPEG file
-                img.save("my_image.jpg")
-            key.append(num)
-            num = num + 1
-        
+        for dirpath, dirnames, filenames in os.walk(directory_path):
+            for filename in filenames:
+            # Check if the file is an image
+                if filename.endswith(('jpg', 'jpeg', 'png', 'bmp', 'gif')):
+                    # Read the image file
+                    image_path = os.path.join(dirpath, filename)
+                    with Image.open(image_path) as img:
+                        # Convert the image to a NumPy array
+                        img_arr = np.array(img)
+                        b_string = base64.b64decode(numpy_to_base64_image(img_arr).encode('utf-8'))
+                        img_arrs.append(b_string)
+                        key.append(num)
+                        num = num + 1
         self.write_to_kafka(topic, zip(img_arrs, key))
 
 
@@ -93,5 +82,5 @@ if __name__ == '__main__':
     directory_path = args.directory_path
     producer = Producer(config)
     # produce_from_mat(producer, topic)
-    producer.produce_from_folder(topic, directory_path, test=True)
+    producer.produce_from_folder(topic, directory_path)
     
