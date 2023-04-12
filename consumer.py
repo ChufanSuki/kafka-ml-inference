@@ -18,7 +18,7 @@ from typing import List
 from threading import Thread
 
 
-image_classification_url = "http://10.14.42.236:32032/imageClassification"
+image_classification_url = "http://10.14.42.236:31120/imageClassification"
 object_detection_url = "http://10.14.42.236:32079/objectDetect"
 image_segmentation_url = "http://10.14.42.236:30260/imageSegmentation"
 class ObjectDetectionService(Service):
@@ -51,7 +51,7 @@ class Consumer:
         # Subscribe to topic
         self.consumer.subscribe([topic], on_assign=self.reset_offset)
         if topic == "image_classification":
-            self.service = ImageClassificationService("http://10.14.42.236:32032/imageClassification")
+            self.service = ImageClassificationService("http://10.14.42.236:31120/imageClassification")
         elif topic == "object_detection":
             self.service = ObjectDetectionService("http://10.14.42.236:32079/objectDetect")
         elif topic == "image_segmentation":
