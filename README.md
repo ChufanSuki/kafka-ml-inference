@@ -56,6 +56,55 @@ python app.py
 curl -H "Content-type: application/json" -X POST 127.0.0.1:8000/get_img -o result.json
 ```
 
+### API Endpoint for image segmentation
+
+The API endpoint is located at `http://localhost/get_segment_img`.
+Request Format
+
+The API accepts POST requests in JSON format with the following fields:
+
+- `plane_id: will not be used.`
+
+Example Request:
+
+```json
+{
+    "plane_id": "1"
+}
+```
+
+Response Format
+
+The API returns a JSON object with the following fields:
+- `success: Boolean value indicating if the request was successful.`
+- `service: Name of the service.`
+- `base64_str: Base64 string of the classified image.`
+- `message: A message describing the result of the request.`
+
+Example Response:
+
+```json
+{
+    "success": true,
+    "service": "Image Segmentation",
+    "base64_str": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABmklEQV",
+    "message": "Object successfully segmented."
+}
+```
+
+Error Responses
+
+The API returns an error response if the request is malformed or if an error occurs during processing. The error response will contain a message describing the error.
+
+Example Error Response:
+
+```json
+{
+    "success": false,
+    "message": "Malformed request data. Please provide a valid plane ID."
+}
+```
+
 ### API Endpoint for image classification
 
 The API endpoint is located at `http://localhost/get_classified_img`.
