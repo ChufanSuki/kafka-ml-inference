@@ -5,6 +5,7 @@ import os
 from argparse import ArgumentParser, FileType
 from configparser import ConfigParser
 from io import BytesIO
+import sys
 
 import h5py
 import numpy as np
@@ -47,6 +48,7 @@ class Producer:
         key = []
         img_arrs = []
         num = 0
+        largest_size = 0
         for dirpath, dirnames, filenames in os.walk(directory_path):
             for filename in filenames:
             # Check if the file is an image
@@ -57,9 +59,13 @@ class Producer:
                         # Convert the image to a NumPy array
                         img_arr = np.array(img)
                         b_string = base64.b64decode(numpy_to_base64_image(img_arr).encode('utf-8'))
+                        byte_size = sys.getsizeof(b_string)
+                        if byte_size > largest_size:
+                            largest_size = byte_size
                         img_arrs.append(b_string)
                         key.append(num)
                         num = num + 1
+        print("Largest byte size of the string:", largest_size)
         self.write_to_kafka(topic, zip(img_arrs, key))
 
 
@@ -76,6 +82,7 @@ if __name__ == '__main__':
     config_parser = ConfigParser()
     config_parser.read_file(args.config_file)
     config = dict(config_parser['default'])
+    print(config)
 
     # Produce data by selecting random values from these lists.
     topic = args.topic

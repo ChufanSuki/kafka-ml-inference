@@ -19,6 +19,9 @@ from typing import List
 image_classification_url = "http://10.14.42.236:31120/imageClassification"
 object_detection_url = "http://10.14.42.236:32079/objectDetect"
 image_segmentation_url = "http://10.14.42.236:30260/imageSegmentation"
+sar_object_detection_url = "http://10.14.42.236:32423/objectDetect"
+boat_object_detection_url = "http://10.14.42.236:30455/objectDetect"
+
 
 class ObjectDetectionService(Service):
     def __init__(self, url) -> None:
@@ -34,6 +37,8 @@ class ImageSegmentationService(Service):
 
 image_classification_service = ImageClassificationService(image_classification_url)
 object_detection_service = ObjectDetectionService(object_detection_url)
+sar_object_detection_service = ObjectDetectionService(sar_object_detection_url)
+boat_object_detection_service = ObjectDetectionService(boat_object_detection_url)
 image_segmentation_service = ImageSegmentationService(image_segmentation_url)
 image_classification_pool = ServicePool()
 object_detection_pool = ServicePool()
@@ -47,6 +52,10 @@ def process_message(msg, service):
     base64_str = base64.b64encode(msg.value()).decode('utf-8')
     result = send_service(service.url, base64_str)
     result = result["result"]
+    while result == '算法可能未启动完成，请稍等':
+        print('算法可能未启动完成，请稍等')
+        result = send_service(service.url, base64_str)
+        result = result["result"]
     if isinstance(service, ImageClassificationService):
         icr = ImageClassificationResult(base64_str, result[0]["classfication"], result[0]["score"])
         service.result_list.append(icr)
@@ -116,6 +125,10 @@ if __name__ == '__main__':
         service = image_classification_service
     elif topic == "image_segmentation_topic":
         service = image_segmentation_service
+    elif topic == "sar_object_detection_topic":
+        service = sar_object_detection_service
+    elif topic == "boat_object_detection_topic":
+        service = boat_object_detection_service
     
     # Poll for new messages from Kafka and print them.
     try:
