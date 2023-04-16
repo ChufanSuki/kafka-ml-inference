@@ -1,3 +1,6 @@
+![](overview.jpg)
+![](arch.png)
+
 ## Start Kafka and MongoDB
 ```bash
 pip install confluent-kafka
