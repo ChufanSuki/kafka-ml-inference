@@ -1,25 +1,27 @@
-## Start Kafka
+## Start Kafka and MongoDB
 ```bash
 pip install confluent-kafka
+pip install pymongo
 
-docker compose up -d
+sudo docker-compose -f zk-single-kafka-single.yml up -d
 
-docker compose exec broker \
-  kafka-topics --create \
-    --topic my_image_topic \
-    --bootstrap-server localhost:9092 \
-    --replication-factor 1 \
-    --partitions 1
+docker volume create kafka-mongodb
+docker run -v kafka-mongodb:/data/db -p 27017:27017 --name mongodb -d mongo
 ```
 
 If you failed to create docker containers, and `docker conatiner logs id` shows that `Unable to create data directory /var/lib/zookeeper/log/version-2`. This may be caused by full disk (`docker system df`), run`docker builder prune` to clear build cache.
 
+### Create Topic
+
+```bash
+python create_topic.py
+```
+
 ### Produce 
 
 ```bash
-chmod u+x producer.py
-
-./producer.py getting_started.ini
+python producer_app.py --topic object_detection_topic_01 --directory dataset/
+python producer_app.py --topic image_classification_topic_01 --directory dataset/
 ```
 
 ```bash

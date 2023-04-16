@@ -10,8 +10,8 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": true
-            "args": ["getting_started.ini"]
+            "justMyCode": true,
+            "args": ["--topic", "image_classification_topic_01", "--directory", "/home/chufansuki/Downloads/tank_data"]
         }
     ]
 }

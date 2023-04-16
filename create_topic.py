@@ -8,7 +8,8 @@ admin_client = AdminClient({
 })
 
 topic_list = []
-topic_list.append(NewTopic("multi-video-stream", n_partitions, n_repicas))
+topic_list.append(NewTopic("object_detection_topic_01", n_partitions, n_repicas))
+topic_list.append(NewTopic("image_classification_topic_01", n_partitions, n_repicas))
 fs = admin_client.create_topics(topic_list)
 
 for topic, f in fs.items():
