@@ -35,6 +35,7 @@ def create_collections_unique(db, video_names):
         videos_map.update({video: []})
     return videos_map
 
+
 def insert_data_unique(db, videos_map):
     for video, docs in videos_map.items():
         video_collection = db[video]

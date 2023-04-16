@@ -6,14 +6,21 @@ from argparse import ArgumentParser, FileType
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from configparser import ConfigParser
 import base64
+import threading
 import numpy as np
 from PIL import Image
 from io import BytesIO
-from confluent_kafka import OFFSET_BEGINNING, Consumer
+from confluent_kafka import OFFSET_BEGINNING, Consumer, KafkaError, KafkaException
 import random
 from middleware import send_service, numpy_to_base64_image, Service, ServicePool
 from result import ImageClassificationResult, ObjectDetectionResult, Position, ImageSegmentationResult
 from typing import List
+
+from pymongo import MongoClient
+from utils import *
+import time
+import cv2
+from consumer_config import config as consumer_config
 
 
 image_classification_url = "http://10.14.42.236:31120/imageClassification"
@@ -88,16 +95,19 @@ def consume_messages(service_pool):
                 executor.submit(process_message, msg, service_pool)
                 
 class ConsumerThread:
-    def __init__(self, config, topic, db):
+    def __init__(self, config, topic, batch_size, service, db):
         self.config = config
         self.topic = topic
+        self.batch_size = batch_size
+        self.service = service
         self.db = db
-        
+        self.videos_map = videos_map
+
     def read_data(self):
         consumer = Consumer(self.config)
         consumer.subscribe(self.topic)
         self.run(consumer, 0, [], [])
-        
+
     def run(self, consumer, msg_count, msg_array, metadata_array):
         try:
             while True:
@@ -105,33 +115,52 @@ class ConsumerThread:
                 if msg == None:
                     continue
                 elif msg.error() == None:
-                    process_message(msg, service)
+                    
+                    base64_str = base64.b64encode(msg.value()).decode('utf-8')
+
+                    # convert image bytes data to numpy array of dtype uint8
+                    # nparr = np.frombuffer(msg.value(), np.uint8)
+
+                    # decode image
+                    # img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                    # img = cv2.resize(img, (224, 224))
+                    msg_array.append(base64_str)
+
+                    # get metadata
+                    frame_no = msg.timestamp()[1]
+                    file_name = msg.headers()[0][1].decode("utf-8")
+
+                    metadata_array.append((frame_no, file_name))
 
                     # bulk process
                     msg_count += 1
-                    self.img_map = reset_map(self.img_map)
                     if msg_count % self.batch_size == 0:
                         # predict on batch
-                        img_array = np.asarray(msg_array)
-                        img_array = preprocess_input(img_array)
-                        predictions = self.model.predict(img_array)
-                        labels = decode_predictions(predictions)
+                        # img_array = np.asarray(msg_array)
+                        # img_array = preprocess_input(img_array)
+                        # predictions = self.model.predict(img_array)
+                        # labels = decode_predictions(predictions)
+                        # TODO: send batch to service
+                        assert len(msg_array) == 1
+                        result = send_service(self.service.url, msg_array[0])["result"]
+                        doc = result.as_dict()
+                        self.db[self.topic].insert_one(doc)
 
-                        self.videos_map = reset_map(self.videos_map)
-                        for metadata, label in zip(metadata_array, labels):
-                            top_label = label[0][1]
-                            confidence = label[0][2]
-                            confidence = confidence.item()
-                            frame_no, video_name = metadata
-                            doc = {
-                                "frame": frame_no,
-                                "label": top_label,
-                                "confidence": confidence
-                            }
-                            self.videos_map[video_name].append(doc)
+                        # self.videos_map = reset_map(self.videos_map)
+                        # for metadata, label in zip(metadata_array, labels):
+                        #     top_label = label[0][1]
+                        #     confidence = label[0][2]
+                        #     confidence = confidence.item()
+                        #     frame_no, video_name = metadata
+                        #     doc = {
+                        #         "frame": frame_no,
+                        #         "label": top_label,
+                        #         "confidence": confidence
+                        #     }
+                        #     self.videos_map[video_name].append(doc)
 
                         # insert bulk results into mongodb
-                        insert_data_unique(self.db, self.videos_map)
+                        # insert_data_unique(self.db, self.videos_map)
 
                         # commit synchronously
                         consumer.commit(asynchronous=False)
@@ -153,10 +182,19 @@ class ConsumerThread:
         finally:
             consumer.close()
 
+    def start(self, numThreads):
+        # Note that number of consumers in a group shouldn't exceed the number of partitions in the topic
+        for _ in range(numThreads):
+            t = threading.Thread(target=self.read_data)
+            t.daemon = True
+            t.start()
+            while True: time.sleep(10)
+
+
+
 if __name__ == '__main__':
     # Parse the command line.
     parser = ArgumentParser()
-    parser.add_argument('config_file', type=FileType('r'))
     parser.add_argument('--reset', action='store_true')
     parser.add_argument('--topic', default='image_segmentation_topic')
     parser.add_argument('--filename', default='results')
@@ -164,27 +202,14 @@ if __name__ == '__main__':
     
     filename = args.filename
     topic = args.topic
+    
+    # connect to mongodb
+    client = MongoClient('mongodb://localhost:27017')
+    db = client["ai_studio_demo"]
 
-    # Parse the configuration.
-    # See https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
-    config_parser = ConfigParser()
-    config_parser.read_file(args.config_file)
-    config = dict(config_parser['default'])
-    config.update(config_parser['consumer'])
-
-    # Create Consumer instance
-    consumer = Consumer(config)
-
-    # Set up a callback to handle the '--reset' flag.
-    def reset_offset(consumer, partitions):
-        if args.reset:
-            for p in partitions:
-                p.offset = OFFSET_BEGINNING
-            consumer.assign(partitions)
-
-    # Subscribe to topic
-    consumer.subscribe([topic], on_assign=reset_offset)
-
+    # video_names = ["MOT20-02-raw", "MOT20-03-raw", "MOT20-05-raw"]
+    # videos_map = create_collections_unique(db, video_names)
+    
     if topic == "object_detection_topic":
         service = object_detection_service
     elif topic == "image_classification_topic":
@@ -196,22 +221,13 @@ if __name__ == '__main__':
     elif topic == "boat_object_detection_topic":
         service = boat_object_detection_service
     
-    # Poll for new messages from Kafka and print them.
-    try:
-        # consume_messages(service_pool)
-        while True:
-            msg = consumer.poll(1.0)
-            if msg is None:
-                print("Waiting...")
-            elif msg.error():
-                print("ERROR: %s".format(msg.error()))
-            else:
-                process_message(msg, service)
-    except KeyboardInterrupt:
-        print(f"exsiting now...")
-    finally:
-        # Leave group and commit final offsets
-        consumer.close()
-    # open a file, where you want to store the data
-    # write every N times
-    service.dump(filename+"-"+topic)
+    consumer_thread = ConsumerThread(consumer_config, topic, 1, service, db)
+    consumer_thread.start(3)
+
+
+    # Set up a callback to handle the '--reset' flag.
+    def reset_offset(consumer, partitions):
+        if args.reset:
+            for p in partitions:
+                p.offset = OFFSET_BEGINNING
+            consumer.assign(partitions)

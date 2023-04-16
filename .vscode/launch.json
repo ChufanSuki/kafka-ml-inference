@@ -11,7 +11,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["--topic", "image_classification_topic_01", "--directory", "/home/chufansuki/Downloads/tank_data"]
+            "args": ["--topic", "image_classification_topic_01"]
         }
     ]
 }
