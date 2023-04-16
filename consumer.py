@@ -86,6 +86,72 @@ def consume_messages(service_pool):
                 print("ERROR: %s".format(msg.error()))
             else:
                 executor.submit(process_message, msg, service_pool)
+                
+class ConsumerThread:
+    def __init__(self, config, topic, db):
+        self.config = config
+        self.topic = topic
+        self.db = db
+        
+    def read_data(self):
+        consumer = Consumer(self.config)
+        consumer.subscribe(self.topic)
+        self.run(consumer, 0, [], [])
+        
+    def run(self, consumer, msg_count, msg_array, metadata_array):
+        try:
+            while True:
+                msg = consumer.poll(0.5)
+                if msg == None:
+                    continue
+                elif msg.error() == None:
+                    process_message(msg, service)
+
+                    # bulk process
+                    msg_count += 1
+                    self.img_map = reset_map(self.img_map)
+                    if msg_count % self.batch_size == 0:
+                        # predict on batch
+                        img_array = np.asarray(msg_array)
+                        img_array = preprocess_input(img_array)
+                        predictions = self.model.predict(img_array)
+                        labels = decode_predictions(predictions)
+
+                        self.videos_map = reset_map(self.videos_map)
+                        for metadata, label in zip(metadata_array, labels):
+                            top_label = label[0][1]
+                            confidence = label[0][2]
+                            confidence = confidence.item()
+                            frame_no, video_name = metadata
+                            doc = {
+                                "frame": frame_no,
+                                "label": top_label,
+                                "confidence": confidence
+                            }
+                            self.videos_map[video_name].append(doc)
+
+                        # insert bulk results into mongodb
+                        insert_data_unique(self.db, self.videos_map)
+
+                        # commit synchronously
+                        consumer.commit(asynchronous=False)
+                        # reset the parameters
+                        msg_count = 0
+                        metadata_array = []
+                        msg_array = []
+
+                elif msg.error().code() == KafkaError._PARTITION_EOF:
+                    print('End of partition reached {0}/{1}'
+                        .format(msg.topic(), msg.partition()))
+                else:
+                    print('Error occured: {0}'.format(msg.error().str()))
+
+        except KeyboardInterrupt:
+            print("Detected Keyboard Interrupt. Quitting...")
+            pass
+
+        finally:
+            consumer.close()
 
 if __name__ == '__main__':
     # Parse the command line.

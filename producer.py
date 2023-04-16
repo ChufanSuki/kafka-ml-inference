@@ -5,19 +5,21 @@ import os
 from argparse import ArgumentParser, FileType
 from configparser import ConfigParser
 from io import BytesIO
+from glob import glob
 import sys
 
 import h5py
 import numpy as np
-from confluent_kafka import Producer as KafkaProducer
+from confluent_kafka import Producer
 from PIL import Image
+import concurrent.futures
 
 from middleware import numpy_to_base64_image
 
 
-class Producer:
+class ProducerThread:
     def __init__(self, config) -> None:
-        self.producer: KafkaProducer = KafkaProducer(config)
+        self.producer: Producer = Producer(config)
     
     # Optional per-message delivery callback (triggered by poll() or flush())
     # when a message has been successfully delivered or permanently
@@ -67,6 +69,21 @@ class Producer:
                         num = num + 1
         print("Largest byte size of the string:", largest_size)
         self.write_to_kafka(topic, zip(img_arrs, key))
+        
+    def publishFrame(self, topic, image_path):
+        with Image.open(image_path) as img:
+            # Convert the image to a NumPy array
+            img_arr = np.array(img)
+            b_string = base64.b64decode(numpy_to_base64_image(img_arr).encode('utf-8'))
+        self.producer.produce(topic, value=b_string, callback=self.delivery_callback)
+    
+    def start(self):
+        # runs until the processes in all the threads are finished
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            executor.map(self.produce_from_folder, topic, directory_path)
+
+        self.producer.flush() # push all the remaining messages in the queue
+        print("Finished...")
 
 
 if __name__ == '__main__':
@@ -74,7 +91,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('config_file', type=FileType('r'))
     parser.add_argument('--topic', default='my_image_topic')
-    parser.add_argument('--directory-path')
+    parser.add_argument('--directory')
     args = parser.parse_args()
 
     # Parse the configuration.
@@ -86,8 +103,9 @@ if __name__ == '__main__':
 
     # Produce data by selecting random values from these lists.
     topic = args.topic
-    directory_path = args.directory_path
-    producer = Producer(config)
+    directory = args.directory
+    paths = glob(directory + '*.jpg')
+    producer_thread = ProducerThread(config)
     # produce_from_mat(producer, topic)
-    producer.produce_from_folder(topic, directory_path)
+    producer_thread.produce_from_folder(topic, directory)
     
