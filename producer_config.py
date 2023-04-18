@@ -6,5 +6,6 @@ config = {
     'max.in.flight.requests.per.connection': 5,
     'compression.type': 'snappy',
     'linger.ms': 5,
-    'batch.num.messages': 32
+    'batch.num.messages': 32,
+    'message.max.bytes': 10485760
 }

@@ -114,7 +114,6 @@ if __name__ == '__main__':
     topic = args.topic
     directory = args.directory
     paths = glob(directory + '*.jpg')
-    print(paths)
     producer_thread = ProducerThread(producer_config)
     # produce_from_mat(producer, topic)
     producer_thread.produce_from_folder(topic, directory)

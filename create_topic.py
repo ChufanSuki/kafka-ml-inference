@@ -8,8 +8,12 @@ admin_client = AdminClient({
 })
 
 topic_list = []
-topic_list.append(NewTopic("object_detection_topic_01", n_partitions, n_repicas))
-topic_list.append(NewTopic("image_classification_topic_01", n_partitions, n_repicas))
+topic_list.append(NewTopic("object_detection_test04_min_test_006_topic", n_partitions, n_repicas))
+topic_list.append(NewTopic("object_detection_test04_min_test_tv_city_topic", n_partitions, n_repicas))
+topic_list.append(NewTopic("object_detection_test04_min_test_follow_vehicle_topic", n_partitions, n_repicas))
+topic_list.append(NewTopic("image_classification_test01_flight_data_topic", n_partitions, n_repicas))
+topic_list.append(NewTopic("image_classification_test01_flight_data1_topic", n_partitions, n_repicas))
+topic_list.append(NewTopic("image_classification_test01_flight_data2_topic", n_partitions, n_repicas))
 fs = admin_client.create_topics(topic_list)
 
 for topic, f in fs.items():

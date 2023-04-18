@@ -35,11 +35,15 @@ def send_service(url, data):
     headers = {"Content-Type": "application/json"}
 
     data = {"image": data}
+    import time
 
+    start_time = time.time()
     # send the post request
     response = requests.post(url, headers=headers, json=data)
-    
-    print(response.status_code) # Should print 200 if successful
+    end_time = time.time()
+    time_taken = end_time - start_time
+    print("Time taken:", time_taken, "seconds")
+
     try:
         json_data = json.loads(response.text)
         return json_data

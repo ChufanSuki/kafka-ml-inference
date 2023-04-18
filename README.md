@@ -23,22 +23,39 @@ python create_topic.py
 ### Produce 
 
 ```bash
-python producer_app.py --topic object_detection_topic_01 --directory dataset/
-python producer_app.py --topic image_classification_topic_01 --directory dataset/
+python producer_app.py --topic object_detection_test04_min_test_006_topic --directory ../kafka/dataset/proj_dataset/min_test/006/image
+python producer_app.py --topic object_detection_test04_min_test_tv_city_topic --directory ../kafka/dataset/proj_dataset/min_test/tv_city/image
+python producer_app.py --topic object_detection_test04_min_test_follow_vehicle_topic --directory ../kafka/dataset/proj_dataset/min_test/follow_vehicle/image
+python producer_app.py --topic image_classification_test01_flight_data_topic --directory ../kafka/dataset/flight_data
+python producer_app.py --topic image_classification_test01_flight_data1_topic --directory ../kafka/dataset/flight_data
+python producer_app.py --topic image_classification_test01_flight_data2_topic --directory ../kafka/dataset/flight_data
 ```
 
 ```bash
-Produced event to topic my_image_topic: key = 0           
-Produced event to topic my_image_topic: key = 1           
-Produced event to topic my_image_topic: key = 2   
+root - INFO - msg produced. 
+Topic: object_detection_test04_topic 
+Partition: 0 
+Offset: 63 
+Timestamp: (1, 65) 
+
+root - INFO - msg produced. 
+Topic: object_detection_test04_topic 
+Partition: 0 
+Offset: 64 
+Timestamp: (1, 66) 
+
+Wrote 67 messages into topic: object_detection_test04_topic 
 ```
 
 ### Consume
 
 ```bash
-chmod u+x consumer.py
-
-./consumer.py getting_started.ini
+python consumer_app.py --topic object_detection_test04_min_test_006_topic
+python consumer_app.py --topic object_detection_test04_min_test_tv_city_topic
+python consumer_app.py --topic object_detection_test04_min_test_follow_vehicle_topic
+python consumer_app.py --topic image_classification_test01_flight_data_topic
+python consumer_app.py --topic image_classification_test01_flight_data1_topic
+python consumer_app.py --topic image_classification_test01_flight_data2_topic
 ```
 
 ```bash
@@ -165,5 +182,39 @@ Example Error Response:
 {
     "success": false,
     "message": "Malformed request data. Please provide a valid plane ID."
+}
+```
+
+
+## New API
+
+### Example:
+Request:
+```bash
+127.0.0.1 - - [18/Apr/2023 21:37:43] "GET /get_document?collection=object_detection_test04_min_test_follow_vehicle_topic HTTP/1.1" 200 -
+```
+
+Response:
+```json
+{
+    '_id': ObjectId('643e9b5b25126cc2ba3b6cd6'), 
+    'base64_str': 'iVBORw0KGgoAAAANSUhE',
+    'result_list': [{'class_name': 'car', 'score': 0.50668, 'position': {'left': 1071.8, 'top': 920.4, 'width': 23.5, 'height': 14.4}}, {'class_name': 'car', 'score': 0.40999, 'position': {'left': 1008.4, 'top': 829.9, 'width': 22.2, 'height': 18.8}}, {'class_name': 'car', 'score': 0.31931, 'position': {'left': 1016.8, 'top': 840.0, 'width': 23.9, 'height': 12.3}}]
+}
+```
+
+### Example
+
+Request:
+```bash
+127.0.0.1 - - [18/Apr/2023 21:31:02] "GET /get_document?collection=image_classification_test01_flight_data_topic HTTP/1.1" 200 -
+```
+
+Response:
+```json
+{
+    '_id': ObjectId('643e9b5b25126cc2ba3b6cd6'), 
+    'base64_str': 'iVBORw0KGgoAAAANSUhE',
+    'result_list': [{'score': 0.14851722121238708, 'classfication': '美洲虎'}]
 }
 ```

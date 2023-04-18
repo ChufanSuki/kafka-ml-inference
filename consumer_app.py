@@ -23,11 +23,11 @@ import cv2
 from consumer_config import config as consumer_config
 
 
-image_classification_url = "http://10.14.42.236:31120/imageClassification"
-object_detection_url = "http://10.14.42.236:32079/objectDetect"
-image_segmentation_url = "http://10.14.42.236:30260/imageSegmentation"
-sar_object_detection_url = "http://10.14.42.236:32423/objectDetect"
-boat_object_detection_url = "http://10.14.42.236:30455/objectDetect"
+image_classification_test01_url = "http://10.14.42.236:31409/imageClassification"
+object_detection_test04_url = "http://10.14.42.236:31541/objectDetect"
+# image_segmentation_url = "http://10.14.42.236:30260/imageSegmentation"
+# sar_object_detection_url = "http://10.14.42.236:32423/objectDetect"
+# boat_object_detection_url = "http://10.14.42.236:30455/objectDetect"
 
 
 class ObjectDetectionService(Service):
@@ -42,27 +42,23 @@ class ImageSegmentationService(Service):
     def __init__(self, url) -> None:
         super().__init__(url)
 
-image_classification_service = ImageClassificationService(image_classification_url)
-object_detection_service = ObjectDetectionService(object_detection_url)
-sar_object_detection_service = ObjectDetectionService(sar_object_detection_url)
-boat_object_detection_service = ObjectDetectionService(boat_object_detection_url)
-image_segmentation_service = ImageSegmentationService(image_segmentation_url)
-image_classification_pool = ServicePool()
-object_detection_pool = ServicePool()
-image_classification_pool.add(image_classification_service)
-object_detection_pool.add(object_detection_service)
-service_pool = [image_classification_service, object_detection_service]
-service_pools = [image_classification_pool, object_detection_pool]
+image_classification_test01_service = ImageClassificationService(image_classification_test01_url)
+object_detection_test04_service = ObjectDetectionService(object_detection_test04_url)
+# sar_object_detection_service = ObjectDetectionService(sar_object_detection_url)
+# boat_object_detection_service = ObjectDetectionService(boat_object_detection_url)
+# image_segmentation_service = ImageSegmentationService(image_segmentation_url)
+# image_classification_pool = ServicePool()
+# object_detection_pool = ServicePool()
+# image_classification_pool.add(image_classification_service)
+# object_detection_pool.add(object_detection_service)
+# service_pool = [image_classification_service, object_detection_service]
+# service_pools = [image_classification_pool, object_detection_pool]
 
 # Define the function to process a Kafka message
 def process_message(msg, service):
     base64_str = base64.b64encode(msg.value()).decode('utf-8')
     result = send_service(service.url, base64_str)
     result = result["result"]
-    while result == '算法可能未启动完成，请稍等':
-        print('算法可能未启动完成，请稍等')
-        result = send_service(service.url, base64_str)
-        result = result["result"]
     if isinstance(service, ImageClassificationService):
         icr = ImageClassificationResult(base64_str, result[0]["classfication"], result[0]["score"])
         service.result_list.append(icr)
@@ -101,7 +97,6 @@ class ConsumerThread:
         self.batch_size = batch_size
         self.service = service
         self.db = db
-        self.videos_map = videos_map
 
     def read_data(self):
         consumer = Consumer(self.config)
@@ -124,50 +119,37 @@ class ConsumerThread:
                     # decode image
                     # img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                     # img = cv2.resize(img, (224, 224))
-                    msg_array.append(base64_str)
 
                     # get metadata
                     frame_no = msg.timestamp()[1]
                     file_name = msg.headers()[0][1].decode("utf-8")
 
                     metadata_array.append((frame_no, file_name))
-
-                    # bulk process
                     msg_count += 1
-                    if msg_count % self.batch_size == 0:
-                        # predict on batch
-                        # img_array = np.asarray(msg_array)
-                        # img_array = preprocess_input(img_array)
-                        # predictions = self.model.predict(img_array)
-                        # labels = decode_predictions(predictions)
-                        # TODO: send batch to service
-                        assert len(msg_array) == 1
-                        result = send_service(self.service.url, msg_array[0])["result"]
-                        doc = result.as_dict()
-                        self.db[self.topic].insert_one(doc)
-
-                        # self.videos_map = reset_map(self.videos_map)
-                        # for metadata, label in zip(metadata_array, labels):
-                        #     top_label = label[0][1]
-                        #     confidence = label[0][2]
-                        #     confidence = confidence.item()
-                        #     frame_no, video_name = metadata
-                        #     doc = {
-                        #         "frame": frame_no,
-                        #         "label": top_label,
-                        #         "confidence": confidence
-                        #     }
-                        #     self.videos_map[video_name].append(doc)
-
-                        # insert bulk results into mongodb
-                        # insert_data_unique(self.db, self.videos_map)
-
-                        # commit synchronously
-                        consumer.commit(asynchronous=False)
-                        # reset the parameters
-                        msg_count = 0
-                        metadata_array = []
-                        msg_array = []
+                    result_list = send_service(self.service.url, base64_str)["result"]
+                    if isinstance(service, ObjectDetectionService):
+                        num = len(result_list)
+                        odr = ObjectDetectionResult(num, base64_str)
+                        for i in range(num):
+                            odr.add_to_result(
+                                result_list[i]['class_name'], result_list[i]['score'], 
+                                Position(result_list[i]['position']['left'], result_list[i]['position']['top'], result_list[i]['position']['width'], result_list[i]['position']['height'])
+                            )
+                        if num != 0:
+                            odr.draw_rectangle_on_image()
+                        base64_str = odr.base64_str    
+                    result = {
+                        "base64_str": base64_str,
+                        "result_list": result_list
+                    }
+                    self.db[self.topic[0]].insert_one(result)
+                    # commit synchronously
+                    consumer.commit(asynchronous=False)
+                    # reset the parameters
+                    metadata_array = []
+                    result = {}
+                    result_list = []
+                    print(f"Proceed {msg_count}-th message in threading {threading.get_ident()}")
 
                 elif msg.error().code() == KafkaError._PARTITION_EOF:
                     print('End of partition reached {0}/{1}'
@@ -188,46 +170,46 @@ class ConsumerThread:
             t = threading.Thread(target=self.read_data)
             t.daemon = True
             t.start()
-            while True: time.sleep(10)
+            while True: 
+                time.sleep(10)
 
 
 
 if __name__ == '__main__':
     # Parse the command line.
     parser = ArgumentParser()
-    parser.add_argument('--reset', action='store_true')
+    # parser.add_argument('--reset', action='store_true')
     parser.add_argument('--topic', default='image_segmentation_topic')
     parser.add_argument('--filename', default='results')
     args = parser.parse_args()
     
     filename = args.filename
-    topic = args.topic
+    topic = [args.topic]
     
     # connect to mongodb
     client = MongoClient('mongodb://localhost:27017')
     db = client["ai_studio_demo"]
+    
 
     # video_names = ["MOT20-02-raw", "MOT20-03-raw", "MOT20-05-raw"]
     # videos_map = create_collections_unique(db, video_names)
-    
-    if topic == "object_detection_topic":
-        service = object_detection_service
-    elif topic == "image_classification_topic":
-        service = image_classification_service
-    elif topic == "image_segmentation_topic":
-        service = image_segmentation_service
-    elif topic == "sar_object_detection_topic":
-        service = sar_object_detection_service
-    elif topic == "boat_object_detection_topic":
-        service = boat_object_detection_service
+    service = None
+    import re
+
+    object_detection_pattern = r'^object_detection_test04_.*_topic$'
+    image_classification_pattern = r'^image_classification_test01_.*_topic$'
+    if re.match(object_detection_pattern, topic[0]):
+        service = object_detection_test04_service
+    elif re.match(image_classification_pattern, topic[0]):
+        service = image_classification_test01_service
     
     consumer_thread = ConsumerThread(consumer_config, topic, 1, service, db)
     consumer_thread.start(3)
 
 
-    # Set up a callback to handle the '--reset' flag.
-    def reset_offset(consumer, partitions):
-        if args.reset:
-            for p in partitions:
-                p.offset = OFFSET_BEGINNING
-            consumer.assign(partitions)
+    # # Set up a callback to handle the '--reset' flag.
+    # def reset_offset(consumer, partitions):
+    #     if args.reset:
+    #         for p in partitions:
+    #             p.offset = OFFSET_BEGINNING
+    #         consumer.assign(partitions)
