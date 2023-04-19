@@ -1,9 +1,10 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from pymongo import MongoClient, DESCENDING
 from bson.json_util import dumps
 from pymongo.errors import InvalidName
 app = Flask(__name__)
-
+CORS(app)
 # Set up a connection to MongoDB
 client = MongoClient('mongodb://localhost:27017')
 db = client['ai_studio_demo']
@@ -29,4 +30,4 @@ def get_document():
     return jsonify(dumps(document))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
