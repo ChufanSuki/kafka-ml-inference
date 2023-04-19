@@ -30,6 +30,15 @@ class ServicePool:
     def add(self, service):
         self.pool.append(service)
 
+def get_image_base64(url):
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            return base64.b64encode(response.content).decode('utf-8')
+    except:
+        pass
+    return None
+
 def send_service(url, data):
     # define the headers and data for the request
     headers = {"Content-Type": "application/json"}

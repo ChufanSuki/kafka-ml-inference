@@ -51,6 +51,7 @@ class ProducerThread:
         key = []
         img_arrs = []
         largest_size = 0
+        count = 0
         for dirpath, dirnames, filenames in os.walk(directory_path):
             for filename in filenames:
             # Check if the file is an image
@@ -61,6 +62,8 @@ class ProducerThread:
                         # Convert the image to a NumPy array
                         img_arr = np.array(img)
                         b_string = base64.b64decode(numpy_to_base64_image(img_arr).encode('utf-8'))
+                        count += 1
+                        print(f"encoded {count} images to base64.")
                         byte_size = sys.getsizeof(b_string)
                         if byte_size > largest_size:
                             largest_size = byte_size

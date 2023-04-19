@@ -26,6 +26,9 @@ python create_topic.py
 python producer_app.py --topic object_detection_test04_min_test_006_topic --directory ../kafka/dataset/proj_dataset/min_test/006/image
 python producer_app.py --topic object_detection_test04_min_test_tv_city_topic --directory ../kafka/dataset/proj_dataset/min_test/tv_city/image
 python producer_app.py --topic object_detection_test04_min_test_follow_vehicle_topic --directory ../kafka/dataset/proj_dataset/min_test/follow_vehicle/image
+python producer_app.py --topic object_detection_sar_jpg_images_topic --directory ../kafka/dataset/sar_dataset/jpg_images
+python producer_app.py --topic object_detection_boat_boat_dataset_topic --directory ../kafka/dataset/boat_dataset
+python producer_app.py --topic image_segmentation_val_image_topic --directory ../kafka/dataset/val_dataset/pre_val_image
 python producer_app.py --topic image_classification_test01_flight_data_topic --directory ../kafka/dataset/flight_data
 python producer_app.py --topic image_classification_test01_flight_data1_topic --directory ../kafka/dataset/flight_data
 python producer_app.py --topic image_classification_test01_flight_data2_topic --directory ../kafka/dataset/flight_data
@@ -53,6 +56,9 @@ Wrote 67 messages into topic: object_detection_test04_topic
 python consumer_app.py --topic object_detection_test04_min_test_006_topic
 python consumer_app.py --topic object_detection_test04_min_test_tv_city_topic
 python consumer_app.py --topic object_detection_test04_min_test_follow_vehicle_topic
+python consumer_app.py --topic object_detection_sar_jpg_images_topic
+python consumer_app.py --topic object_detection_boat_boat_dataset_topic
+python consumer_app.py --topic image_segmentation_val_image_topic
 python consumer_app.py --topic image_classification_test01_flight_data_topic
 python consumer_app.py --topic image_classification_test01_flight_data1_topic
 python consumer_app.py --topic image_classification_test01_flight_data2_topic

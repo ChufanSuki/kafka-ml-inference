@@ -12,7 +12,7 @@ from PIL import Image
 from io import BytesIO
 from confluent_kafka import OFFSET_BEGINNING, Consumer, KafkaError, KafkaException
 import random
-from middleware import send_service, numpy_to_base64_image, Service, ServicePool
+from middleware import send_service, numpy_to_base64_image, Service, ServicePool, get_image_base64
 from result import ImageClassificationResult, ObjectDetectionResult, Position, ImageSegmentationResult
 from typing import List
 
@@ -25,9 +25,9 @@ from consumer_config import config as consumer_config
 
 image_classification_test01_url = "http://10.14.42.236:31409/imageClassification"
 object_detection_test04_url = "http://10.14.42.236:31541/objectDetect"
-# image_segmentation_url = "http://10.14.42.236:30260/imageSegmentation"
-# sar_object_detection_url = "http://10.14.42.236:32423/objectDetect"
-# boat_object_detection_url = "http://10.14.42.236:30455/objectDetect"
+image_segmentation_url = "http://10.14.42.236:30260/imageSegmentation"
+object_detection_sar_url = "http://10.14.42.236:32166/objectDetect"
+object_detection_boat_url = "http://10.14.42.236:30455/objectDetect"
 
 
 class ObjectDetectionService(Service):
@@ -44,9 +44,9 @@ class ImageSegmentationService(Service):
 
 image_classification_test01_service = ImageClassificationService(image_classification_test01_url)
 object_detection_test04_service = ObjectDetectionService(object_detection_test04_url)
-# sar_object_detection_service = ObjectDetectionService(sar_object_detection_url)
-# boat_object_detection_service = ObjectDetectionService(boat_object_detection_url)
-# image_segmentation_service = ImageSegmentationService(image_segmentation_url)
+object_detection_sar_service = ObjectDetectionService(object_detection_sar_url)
+object_detection_boat_service = ObjectDetectionService(object_detection_boat_url)
+image_segmentation_service = ImageSegmentationService(image_segmentation_url)
 # image_classification_pool = ServicePool()
 # object_detection_pool = ServicePool()
 # image_classification_pool.add(image_classification_service)
@@ -138,10 +138,17 @@ class ConsumerThread:
                         if num != 0:
                             odr.draw_rectangle_on_image()
                         base64_str = odr.base64_str    
-                    result = {
-                        "base64_str": base64_str,
-                        "result_list": result_list
-                    }
+                    if isinstance(service, ImageSegmentationService):
+                        url = result_list["segmentation_list_path"][0]
+                        assert url == "test.png"
+                        result = {
+                            "base64_str": get_image_base64(image_segmentation_url + "/image/" + url)
+                        }
+                    else:
+                        result = {
+                            "base64_str": base64_str,
+                            "result_list": result_list
+                        }
                     self.db[self.topic[0]].insert_one(result)
                     # commit synchronously
                     consumer.commit(asynchronous=False)
@@ -196,12 +203,23 @@ if __name__ == '__main__':
     service = None
     import re
 
-    object_detection_pattern = r'^object_detection_test04_.*_topic$'
-    image_classification_pattern = r'^image_classification_test01_.*_topic$'
-    if re.match(object_detection_pattern, topic[0]):
+    object_detection_test04_pattern = r'^object_detection_test04_.*_topic$'
+    object_detection_sar_pattern = r'^object_detection_sar_.*_topic$'
+    object_detection_boat_pattern = r'^object_detection_boat_.*_topic$'
+    image_classification_test01_pattern = r'^image_classification_test01_.*_topic$'
+    image_segmentation_pattern = r'^image_segmentation_.*_topic$'
+    if re.match(object_detection_test04_pattern, topic[0]):
         service = object_detection_test04_service
-    elif re.match(image_classification_pattern, topic[0]):
+    elif re.match(image_classification_test01_pattern, topic[0]):
         service = image_classification_test01_service
+    elif re.match(object_detection_sar_pattern, topic[0]):
+        service = object_detection_sar_service
+    elif re.match(object_detection_boat_pattern, topic[0]):
+        service = object_detection_boat_service
+    elif re.match(image_segmentation_pattern, topic[0]):
+        service = image_segmentation_service
+        
+    
     
     consumer_thread = ConsumerThread(consumer_config, topic, 1, service, db)
     consumer_thread.start(3)
